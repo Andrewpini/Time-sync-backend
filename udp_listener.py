@@ -22,6 +22,7 @@ broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 if DB_ENABLED:
     # Open database connection
+    #db = pymysql.connect(host = "positioning.cbgkbhphknqn.us-east-2.rds.amazonaws.com", user = "jtguggedal", passwd = "", db = "positioning_db", port = #3306, cursorclass = pymysql.cursors.DictCursor)
     db = pymysql.connect(host = "localhost", user = "root", passwd = "admin", db = "positioning", port = 3306, cursorclass = pymysql.cursors.DictCursor)
 
     # prepare a cursor object using cursor() method
@@ -60,7 +61,7 @@ def main(argv):
 
             #delta = data['timestamp'] - times[addr[0]]
             times[addr[0]] = data['timestamp']
-            print(counter , "\tFrom", addr[0], "\tTimestamp: ", times[addr[0]], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE']) 
+            print(counter , "\tFrom", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE']) 
 
             if DB_ENABLED:
                 sql = "INSERT INTO rssi_data VALUES(NULL, '%s', '%d', '%s', %d, %d, %d, %d, NULL)" % (addr[0], data['timestamp'] , data['address'], data['channel'], data['RSSI'], data['CRC'], data['LPE'])
