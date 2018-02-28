@@ -3,14 +3,26 @@ import sys, getopt
 import socket
 import json
 import pymysql
+import matplotlib.pyplot as plt
+import numpy as np
+from calc import distance
+
 
 DB_ENABLED = False
+GRAPH_ENABLED = True
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
 
 BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 10000
+
+if GRAPH_ENABLED:
+    plt.ion()
+    fig = plt.figure()
+    plt.axis([0, 3, -100, 0])
+    i = 0
+
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
@@ -72,6 +84,31 @@ def main(argv):
                 cursor.execute(sql)
                 db.commit()
             
+
+            dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
+
+            if data['channel'] == 37:
+                color = 'r'
+            elif data['channel'] == 38:
+                color = 'g'
+            if data['channel'] == 39:
+                color = 'b'
+
+            if GRAPH_ENABLED and data['channel'] == 37:
+                color = 'r'
+                dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
+                plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
+
+                color = 'g'
+                dist = distance.ituDistance(data['RSSI'], distance.bleChannelToFrequency(data['channel']), 30, 14.1, 1)
+                plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
+
+                color = 'b'
+                dist = distance.logDistancePathLoss(data['RSSI'], -42.0, 1.0, 4, 0)
+                plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
+                #plt.show()
+                plt.pause(0.0001)
+
             if channel != False:
                 if int(data['channel']) == channel:
                     printing = True
