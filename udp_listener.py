@@ -35,13 +35,8 @@ def sendServerInfo(ip):
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
-<<<<<<< HEAD
     channel = False
     opts, args = getopt.getopt(argv,"chi:o",["channel=", "ip=","addr=", "address="])
-=======
-    global db
-    opts = getopt.getopt(argv,"hi:o",["ip=","addr=", "address="])
->>>>>>> 892a899215c66875cfaa552fcee6d6dd37cc136e
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
         sys.exit(2)
