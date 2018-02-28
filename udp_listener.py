@@ -4,7 +4,7 @@ import socket
 import json
 import pymysql
 
-DB_ENABLED = True
+DB_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -35,7 +35,8 @@ def sendServerInfo(ip):
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
-    opts, args = getopt.getopt(argv,"hi:o",["ip=","addr=", "address="])
+    channel = False
+    opts, args = getopt.getopt(argv,"chi:o",["channel=", "ip=","addr=", "address="])
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
         sys.exit(2)
@@ -46,6 +47,8 @@ def main(argv):
         elif opt in ("-i", "-a", "--ip", "--address"):
             ip = arg
             print(ip)
+        elif opt in ("-c", "--channel"):
+            channel = int(arg)
         else:
             print("udp_listener.py -i <server IP address>")
             sys.exit(2)
@@ -58,16 +61,26 @@ def main(argv):
         try:
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
+            printing = False
 
             #delta = data['timestamp'] - times[addr[0]]
             times[addr[0]] = data['timestamp']
-            print(counter , "\tFrom", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE']) 
 
             if DB_ENABLED:
                 sql = "INSERT INTO rssi_data VALUES(NULL, '%s', '%d', '%s', %d, %d, %d, %d, NULL)" % (addr[0], data['timestamp'] , data['address'], data['channel'], data['RSSI'], data['CRC'], data['LPE'])
 
                 number_of_rows = cursor.execute(sql)
                 db.commit()
+            
+            if channel != False:
+                if int(data['channel']) == channel:
+                    printing = True
+            else:
+                printing = True
+
+            if printing:
+                print(counter , "\tFrom", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE']) 
+
         except KeyboardInterrupt:
             print("Shutting down interval...")
             interval.stop()
