@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  div(id="bodyRoyal")
+   table(border='1')
+    thead
+     tr
+      th ID
+      th Date
+      th Timestamp
+      th IP
+      th Channel
+      th RSSI
+      th CRC
+      th Long Packet Error
+    tbody
+      each item in items
+        tr
+          td=item.ID
+          td=item.Date
+          td=item.Timestamp
+          td=item.IP
+          td=item.Channel
+          td=item.RSSI
+          td=item.CRC
+          td(text-align='right')=item.LPE

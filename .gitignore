@@ -1,2 +1,4 @@
 *_pycahe_*
 *.pyc
+node_modules
+*settings.json*

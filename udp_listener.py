@@ -1,4 +1,4 @@
-from util import Interval
+from utils import Interval
 import sys, getopt
 import socket
 import json
@@ -35,8 +35,13 @@ def sendServerInfo(ip):
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
+<<<<<<< HEAD
     channel = False
     opts, args = getopt.getopt(argv,"chi:o",["channel=", "ip=","addr=", "address="])
+=======
+    global db
+    opts = getopt.getopt(argv,"hi:o",["ip=","addr=", "address="])
+>>>>>>> 892a899215c66875cfaa552fcee6d6dd37cc136e
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
         sys.exit(2)
@@ -69,7 +74,7 @@ def main(argv):
             if DB_ENABLED:
                 sql = "INSERT INTO rssi_data VALUES(NULL, '%s', '%d', '%s', %d, %d, %d, %d, NULL)" % (addr[0], data['timestamp'] , data['address'], data['channel'], data['RSSI'], data['CRC'], data['LPE'])
 
-                number_of_rows = cursor.execute(sql)
+                cursor.execute(sql)
                 db.commit()
             
             if channel != False:
