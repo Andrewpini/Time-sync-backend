@@ -13,17 +13,22 @@ def bleChannelToFrequency(channel):
 
 
 # Log-Distance Path Loss model
-# Basic form: RSSI = RSSI(d0) + 10nlog(d/d0) + Xo
+# Basic form: RSSI = RSSI(d0) - 10nlog(d/d0) + Xo
 # rssi is measured RSSI
 # rssi_d0 is RSSI at distance d0
 # n is the path loss exponent
 # xo is zero-mean Gaussian distributed random variable with standard deviation to compensate for shadowing effects
 def logDistancePathLoss(rssi, rssi_d0, d0, n, xo):
-	rhs = (math.fabs(rssi) - math.fabs(rssi_d0) - xo) / (10 * n)
+	rhs = -(rssi - rssi_d0 - xo) / (10 * n)
 	distance = d0 * math.pow(10, rhs)
 
 	return distance
 
+# Function to calculate the path loss exponent used by Log-Distance Path loss model
+def calcPathLossExponent(rssi, d, rssi_d0, d0, xo):
+	n = (rssi_d0 - rssi) / (10 * math.log10(d/d0))
+
+	return n
 
 # ITU's recommended model for indoor environments
 # Basic form: Ltotal = L(d0) + N log(d/d0) + Lf(n) 	[dB], L(d0) = 20 log(f) - 28, f in MHz and d0 = 1m
@@ -34,11 +39,11 @@ def logDistancePathLoss(rssi, rssi_d0, d0, n, xo):
 # n is the number of floors the signal propagates across
 def ituDistance(rssi, f, N, Lf, n):
 	Lfn = Lf * n 
-	Ld0 = 20 * math.log(f, 10) - 28
+	Ld0 = 20 * math.log10(f) - 28
 	d0 = 1
 	
 	rhs = (math.fabs(rssi) - Ld0 - Lfn) / N
-	distance = math.pow(10, rhs) * d0
+	distance =  d0 * math.pow(10, rhs)
 
 	return distance
 
