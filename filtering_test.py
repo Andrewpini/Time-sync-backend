@@ -4,6 +4,9 @@ import socket
 import json
 import pymysql
 from calc import distance
+import numpy as np
+from filterpy.kalman import KalmanFilter
+from filterpy.common import Q_discrete_white_noise
 
 
 DB_ENABLED = False
@@ -45,6 +48,18 @@ def main(argv):
     global GRAPH_ENABLED
     opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
     del(args)
+    counter = 0
+    raw_rssi = list()
+    filtered_rssi = list()
+    dist = list()
+
+    kalman = KalmanFilter(dim_x=1, dim_z=1)
+    kalman.x = np.array([[-30.]])
+    kalman.F = np.array([[1.]])
+    kalman.H = np.array([[1.]])
+    kalman.P = np.array([[0.]])
+    kalman.R = 1.4
+    kalman.Q = 0.065
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -67,7 +82,11 @@ def main(argv):
     if GRAPH_ENABLED:
         import matplotlib.pyplot as plt
         plt.ion()
-        plt.axis([0, 3, -100, 0])
+        #plt.axis([0, 100, -100, 0])
+        #x = np.linspace(0, 2, 100)
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.legend(loc="lower right")
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
     print("Starting Interval, press CTRL+C to stop.")
@@ -88,38 +107,35 @@ def main(argv):
                 cursor.execute(sql)
                 db.commit()
             
+            #dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
 
-            dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
-
-            if data['channel'] == 37:
-                color = 'r'
-            elif data['channel'] == 38:
-                color = 'g'
-            if data['channel'] == 39:
-                color = 'b'
 
             if GRAPH_ENABLED and data['channel'] == 37:
                 if addr[0] == "10.0.0.11":
+                    kalman.predict()
+                    kalman.update(data['RSSI'])
+                    filtered_rssi.append(kalman.x[0])
+                    counter += 1
                     color = 'r'
-                    dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
-                    plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
-                elif addr[0] == "10.0.0.13":
+                    dist.append(round(counter / 2))
+                    raw_rssi.append(data['RSSI'])
+                    
+
+                    plt.axis([0, dist[-1] + 20, -100, 0])
+                    #plt.scatter(dist, data['RSSI'], color=color, alpha=0.5)
+                    #ax.plot(dist, data['RSSI'], linestyle='-', color="b", linewidth=3, label="Raw")
                     color = 'g'
-                    dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
-                    plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
+                    #plt.scatter(dist, filtered_rssi, color=color, alpha=0.5)
+                    ax.plot(dist, raw_rssi, 'r-', label="Raw")
+                    ax.plot(dist, filtered_rssi, 'b-', label="Kalman", linewidth=3)
 
-                '''
-                color = 'g'
-                dist = distance.ituDistance(data['RSSI'], distance.bleChannelToFrequency(data['channel']), 30, 14.1, 1)
-                plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
+                    if counter % 2 == 0:
+                        plt.draw()
+                        plt.pause(0.0001)
+                    if counter == 1:
+                        plt.legend(loc="lower right")
 
-                color = 'b'
-                dist = distance.logDistancePathLoss(data['RSSI'], -42.0, 1.0, 4, 0)
-                plt.scatter(dist, data['RSSI'], color=color, alpha=0.1)
-                #plt.show()
-                '''
 
-                plt.pause(0.0001)
 
             if channel != False:
                 if int(data['channel']) == channel:
