@@ -9,7 +9,7 @@ from calc import distance
 
 
 DB_ENABLED = False
-GRAPH_ENABLED = True
+GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -17,11 +17,7 @@ LISTEN_PORT = 11001
 BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 10000
 
-if GRAPH_ENABLED:
-    plt.ion()
-    fig = plt.figure()
-    plt.axis([0, 3, -100, 0])
-    i = 0
+
 
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -48,7 +44,9 @@ def sendServerInfo(ip):
 
 def main(argv):
     channel = False
-    opts, args = getopt.getopt(argv,"chi:o",["channel=", "ip=","addr=", "address="])
+    global GRAPH_ENABLED
+    opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
+
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
         sys.exit(2)
@@ -61,10 +59,18 @@ def main(argv):
             print(ip)
         elif opt in ("-c", "--channel"):
             channel = int(arg)
+        elif opt in ("-g", "--graph"):
+            GRAPH_ENABLED = True
         else:
             print("udp_listener.py -i <server IP address>")
             sys.exit(2)
-
+    
+    if GRAPH_ENABLED:
+        plt.ion()
+        fig = plt.figure()
+        plt.axis([0, 3, -100, 0])
+        i = 0
+        
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
     print("Starting Interval, press CTRL+C to stop.")
     interval.start() 
