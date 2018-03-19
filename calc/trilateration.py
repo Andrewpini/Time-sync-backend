@@ -1,5 +1,6 @@
 import numpy as np
 import math
+from statistics import median
 
 # Trilateration calculation function assuming perfect intersection in a single point
 # Not for real-life use
@@ -28,3 +29,12 @@ def trilateration(x0, y0, r0, x1, y1, r1, x2, y2, r2):
 # Function to check if two circels intersect
 def checkCircleIntersection(x0, y0, r0, x1, y1, r1):
 	return math.hypot(x0-x1, y0-y1) <= (r0 + r1)
+
+
+def channelSelect(channelData, mode='max'):
+	if mode == 'max':
+		return max(channelData)
+	elif mode == 'avg':
+		return np.mean(channelData)
+	elif mode == 'median':
+		return median(channelData)
