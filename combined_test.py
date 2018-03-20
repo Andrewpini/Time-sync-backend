@@ -112,8 +112,8 @@ def main(argv):
                 nodes[ip][address]["kalman"].F = np.array([[1.]])
                 nodes[ip][address]["kalman"].H = np.array([[1.]])
                 nodes[ip][address]["kalman"].P = np.array([[0.]])
-                nodes[ip][address]["kalman"].R = 10.4
-                nodes[ip][address]["kalman"].Q = 0.005
+                nodes[ip][address]["kalman"].R = 1.4
+                nodes[ip][address]["kalman"].Q = 0.065
 
             if nodes[ip][address]["currentCounter"] == counter:
                 nodes[ip][address]["currentCounterAdvCount"] += 1
@@ -135,7 +135,7 @@ def main(argv):
                 n = 2.6
                 xo = 1.1
 		        
-                nodes[ip][address]["distance"] = round(distance.logDistancePathLoss(rssi, rssi_d0, d0, n, xo), 2)
+                nodes[ip][address]["distance"] = round(distance.logDistancePathLoss(nodes[ip][address]["filteredRssi"], rssi_d0, d0, n, xo), 2)
 
                 print("IP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[ip][address]["filteredRssi"], "\tDistance: ", nodes[ip][address]["distance"])
 
