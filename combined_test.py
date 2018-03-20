@@ -48,7 +48,7 @@ def main(argv):
     nodes["10.0.0.12"]["position"]["x"] = 0
     nodes["10.0.0.12"]["position"]["y"] = 0
     nodes["10.0.0.14"]["position"]["x"] = 0
-    nodes["10.0.0.14"]["position"]["y"] = 1.3
+    nodes["10.0.0.14"]["position"]["y"] = 2
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -112,8 +112,8 @@ def main(argv):
                 nodes[ip][address]["kalman"].F = np.array([[1.]])
                 nodes[ip][address]["kalman"].H = np.array([[1.]])
                 nodes[ip][address]["kalman"].P = np.array([[0.]])
-                nodes[ip][address]["kalman"].R = 1.4
-                nodes[ip][address]["kalman"].Q = 0.065
+                nodes[ip][address]["kalman"].R = 10.4
+                nodes[ip][address]["kalman"].Q = 0.005
 
             if nodes[ip][address]["currentCounter"] == counter:
                 nodes[ip][address]["currentCounterAdvCount"] += 1
@@ -130,7 +130,7 @@ def main(argv):
                 nodes[ip][address]["filteredRssi"] = nodes[ip][address]["kalman"].x[0]
 
                 # Log-distance path loss model parameters
-                rssi_d0 = -44.0
+                rssi_d0 = -40.0
                 d0 = 1.0
                 n = 2.6
                 xo = 1.1
