@@ -10,13 +10,68 @@ from filterpy.common import Q_discrete_white_noise
 from calc import multilateration as multi
 import matplotlib.pyplot as plt
 
-GRAPH_ENABLED = False
-
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
 
 BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 10000
+
+
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class Tag:
+    def __init__(self, address="", currentCounter=0, currentCounterAdvCount=0):
+        self.address = address
+        self.currentCounter = currentCounter
+        self.currentCounterAdvCount = currentCounterAdvCount
+        self.rssi = list()
+        self.filteredRssi = 0
+        self.distance = 0
+        self.kalman = KalmanFilter(dim_x=1, dim_z=1)
+        self.kalman.x = np.array([[-30.]])
+        self.kalman.F = np.array([[1.]])
+        self.kalman.H = np.array([[1.]])
+        self.kalman.P = np.array([[0.]])
+        self.kalman.R = 1.4
+        self.kalman.Q = 0.065
+
+    def setKalmanParameters(self, x, F, H, P, R, Q, dim_x=1, dim_z=1):
+        self.kalman = KalmanFilter(dim_x=dim_x, dim_z=dim_z)
+        self.kalman.x = x
+        self.kalman.F = F
+        self.kalman.H = H
+        self.kalman.P = P
+        self.kalman.R = R
+        self.kalman.Q = Q
+
+class Node:
+    def __init__(self, nodeID, x=0, y=0):
+        self.nodeID = nodeID
+        self.position = Position(x, y)
+        self.tags = dict()
+        
+
+
+
+nodes = dict()
+nodes["93:94:07:73:96:1e"] = Node("93:94:07:73:96:1e", x=2, y=0)
+nodes["63:c3:af:19:3d:a0"] = Node("63:c3:af:19:3d:a0", x=0, y=0)
+nodes["88:eb:88:71:90:e8"] = Node("88:eb:88:71:90:e8", x=0, y=2)
+"""
+nodes["93:94:07:73:96:1e"]["position"] = dict()
+nodes["63:c3:af:19:3d:a0"]["position"] = dict()
+nodes["88:eb:88:71:90:e8"]["position"] = dict()
+nodes["93:94:07:73:96:1e"]["position"]["x"] = 2
+nodes["93:94:07:73:96:1e"]["position"]["y"] = 0
+nodes["63:c3:af:19:3d:a0"]["position"]["x"] = 0
+nodes["63:c3:af:19:3d:a0"]["position"]["y"] = 0
+nodes["88:eb:88:71:90:e8"]["position"]["x"] = 0
+nodes["88:eb:88:71:90:e8"]["position"]["y"] = 2
+"""
+
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
@@ -31,24 +86,10 @@ def sendServerInfo(ip):
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
-    channel = False
-    global GRAPH_ENABLED
+    global nodes
     opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
     del(args)
     totalCounter = 0
-    nodes = dict()
-    nodes["93:94:07:73:96:1e"] = dict()
-    nodes["63:c3:af:19:3d:a0"] = dict()
-    nodes["88:eb:88:71:90:e8"] = dict()
-    nodes["93:94:07:73:96:1e"]["position"] = dict()
-    nodes["63:c3:af:19:3d:a0"]["position"] = dict()
-    nodes["88:eb:88:71:90:e8"]["position"] = dict()
-    nodes["93:94:07:73:96:1e"]["position"]["x"] = 2
-    nodes["93:94:07:73:96:1e"]["position"]["y"] = 0
-    nodes["63:c3:af:19:3d:a0"]["position"]["x"] = 0
-    nodes["63:c3:af:19:3d:a0"]["position"]["y"] = 0
-    nodes["88:eb:88:71:90:e8"]["position"]["x"] = 0
-    nodes["88:eb:88:71:90:e8"]["position"]["y"] = 2
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -60,10 +101,6 @@ def main(argv):
         elif opt in ("-i", "-a", "--ip", "--address"):
             ip = arg
             print(ip)
-        elif opt in ("-c", "--channel"):
-            channel = int(arg)
-        elif opt in ("-g", "--graph"):
-            GRAPH_ENABLED = True
         else:
             print("udp_listener.py -i <server IP address>")
             sys.exit(2)
@@ -72,7 +109,7 @@ def main(argv):
     print("Starting Interval, press CTRL+C to stop.")
     interval.start() 
 
-
+    # Initiate figure 
     fig = plt.figure()
     plt.ion()
     ax = fig.add_subplot(1, 1, 1)
@@ -86,12 +123,10 @@ def main(argv):
         try:
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
-            printing = False
             ip = addr[0]
             nodeID = data['nodeID']
             timestamp = data['timestamp']
             address = data['address']
-            channel = data['channel']
             rssi = data['RSSI']
             crc = data['CRC']
             lpe = data['LPE']
@@ -100,14 +135,15 @@ def main(argv):
 
             if crc == 1 and lpe == 0:
                 if nodeID not in nodes: 
-                    nodes[nodeID] = dict()
+                    nodes[nodeID] = Node(nodeID)
                 
-                if address not in nodes[nodeID]: 
-                    nodes[nodeID][address] = dict()
-                    nodes[nodeID][address]["currentCounter"] = counter
-                    nodes[nodeID][address]["currentCounterAdvCount"] = 0
-                    nodes[nodeID][address]["rssi"] = list()
+                if address not in nodes[nodeID].tags: 
+                    nodes[nodeID].tags[address] = Tag(address)
+                    nodes[nodeID].tags[address].currentCounter = counter
+                    nodes[nodeID].tags[address].currentCounterAdvCount  = 0
+                    #nodes[nodeID][address]["rssi"] = list()
 
+                """
                 if "kalman" not in nodes[nodeID][address]:
                     nodes[nodeID][address]["kalman"] = KalmanFilter(dim_x=1, dim_z=1)
                     nodes[nodeID][address]["kalman"].x = np.array([[-30.]])
@@ -116,32 +152,29 @@ def main(argv):
                     nodes[nodeID][address]["kalman"].P = np.array([[0.]])
                     nodes[nodeID][address]["kalman"].R = 1.4
                     nodes[nodeID][address]["kalman"].Q = 0.065
+                """
 
-                if nodes[nodeID][address]["currentCounter"] == counter:
-                    nodes[nodeID][address]["currentCounterAdvCount"] += 1
+                if nodes[nodeID].tags[address].currentCounter == counter:
+                    nodes[nodeID].tags[address].currentCounterAdvCount += 1
                 else:
-                    nodes[nodeID][address]["currentCounter"] = counter
-                    nodes[nodeID][address]["currentCounterAdvCount"] = 1
+                    nodes[nodeID].tags[address].currentCounter = counter
+                    nodes[nodeID].tags[address].currentCounterAdvCount = 1
                 
-                if nodes[nodeID][address]["currentCounterAdvCount"] == 3:
-                    nodes[nodeID][address]["rssi"].append(rssi) 
-                    selectedChannelRssi = max(nodes[nodeID][address]["rssi"])
+                if nodes[nodeID].tags[address].currentCounterAdvCount == 3:
+                    nodes[nodeID].tags[address].rssi.append(rssi) 
+                    selectedChannelRssi = max(nodes[nodeID].tags[address].rssi)
 
-                    nodes[nodeID][address]["kalman"].predict()
-                    nodes[nodeID][address]["kalman"].update(selectedChannelRssi)
-                    nodes[nodeID][address]["filteredRssi"] = nodes[nodeID][address]["kalman"].x[0]
+                    nodes[nodeID].tags[address].kalman.predict()
+                    nodes[nodeID].tags[address].kalman.update(selectedChannelRssi)
+                    filteredRssi = nodes[nodeID].tags[address].kalman.x[0]
+                    nodes[nodeID].tags[address].filteredRssi = filteredRssi
 
-                    # Log-distance path loss model parameters
-                    rssi_d0 = -40.0
-                    d0 = 1.0
-                    n = 2.6
-                    xo = 1.1
-                    
-                    nodes[nodeID][address]["distance"] = round(distance.logDistancePathLoss(nodes[nodeID][address]["filteredRssi"], rssi_d0, d0, n, xo), 2)
+                    # Log-distance path loss model
+                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-40.0, d0=1.0, n=2.6, xo=1.1), ndigits=2)
 
-                    print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID][address]["filteredRssi"], "\tDistance: ", nodes[nodeID][address]["distance"])
+                    print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID].tags[address].filteredRssi, "\tDistance: ", nodes[nodeID].tags[address].distance)
 
-                    nodes[nodeID][address]["rssi"] = list()
+                    nodes[nodeID].tags[address].rssi = list()
                     totalCounter += 1
                 
                 if totalCounter > 0 and totalCounter % 10 == 0:
@@ -151,9 +184,9 @@ def main(argv):
                     ax.set_ylim((-5, 5))
 
                     for _, node in nodes.items():
-                        x = node["position"]["x"]
-                        y = node["position"]["y"]
-                        radius = node[address]["distance"]
+                        x = node.position.x
+                        y = node.position.y
+                        radius = node.tags[address].distance
                         positions.append((x, y, radius))
 
                         circle = plt.Circle((x, y), radius=radius, color='b', alpha=0.1)
@@ -169,9 +202,6 @@ def main(argv):
                     plt.draw()
                     plt.pause(0.0001)
                     
-                if printing:
-                    print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe) 
-
         except KeyboardInterrupt:
             print("Shutting down interval...")
             interval.stop()
