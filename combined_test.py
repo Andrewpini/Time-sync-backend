@@ -7,6 +7,8 @@ from calc import distance
 import numpy as np
 from filterpy.kalman import KalmanFilter
 from filterpy.common import Q_discrete_white_noise
+from calc import multilateration as multi
+import matplotlib.pyplot as plt
 
 GRAPH_ENABLED = False
 
@@ -33,7 +35,20 @@ def main(argv):
     global GRAPH_ENABLED
     opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
     del(args)
+    totalCounter = 0
     nodes = dict()
+    nodes["10.0.0.11"] = dict()
+    nodes["10.0.0.12"] = dict()
+    nodes["10.0.0.14"] = dict()
+    nodes["10.0.0.11"]["position"] = dict()
+    nodes["10.0.0.12"]["position"] = dict()
+    nodes["10.0.0.14"]["position"] = dict()
+    nodes["10.0.0.11"]["position"]["x"] = 2
+    nodes["10.0.0.11"]["position"]["y"] = 0
+    nodes["10.0.0.12"]["position"]["x"] = 0
+    nodes["10.0.0.12"]["position"]["y"] = 0
+    nodes["10.0.0.14"]["position"]["x"] = 0
+    nodes["10.0.0.14"]["position"]["y"] = 1.3
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -56,6 +71,16 @@ def main(argv):
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
     print("Starting Interval, press CTRL+C to stop.")
     interval.start() 
+
+
+    fig = plt.figure()
+    plt.ion()
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_xlim((-5, 5))
+    ax.set_ylim((-5, 5))
+    x0,x1 = ax.get_xlim()
+    y0,y1 = ax.get_ylim()
+    ax.set_aspect(abs(x1-x0)/abs(y1-y0))
 
     while True:
         try:
@@ -104,9 +129,45 @@ def main(argv):
                 nodes[ip][address]["kalman"].update(selectedChannelRssi)
                 nodes[ip][address]["filteredRssi"] = nodes[ip][address]["kalman"].x[0]
 
-                print("IP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[ip][address]["filteredRssi"])
+                # Log-distance path loss model parameters
+                rssi_d0 = -44.0
+                d0 = 1.0
+                n = 2.6
+                xo = 1.1
+		        
+                nodes[ip][address]["distance"] = round(distance.logDistancePathLoss(rssi, rssi_d0, d0, n, xo), 2)
+
+                print("IP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[ip][address]["filteredRssi"], "\tDistance: ", nodes[ip][address]["distance"])
 
                 nodes[ip][address]["rssi"] = list()
+                totalCounter += 1
+            
+            if totalCounter > 0 and totalCounter % 10 == 0:
+                position = multi.multilateration({  (nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"], nodes["10.0.0.11"][address]["distance"]), 
+                                                    (nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"], nodes["10.0.0.12"][address]["distance"]),
+                                                    (nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"], nodes["10.0.0.14"][address]["distance"])
+                                                })
+
+                circ1 = plt.Circle((nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"]), radius=nodes["10.0.0.11"][address]["distance"], color='b', alpha=0.1)
+                circ2 = plt.Circle((nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"]), radius=0.01, color='r', alpha=1)
+                circ3 = plt.Circle((nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"]), radius=nodes["10.0.0.12"][address]["distance"], color='b', alpha=0.1)
+                circ4 = plt.Circle((nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"]), radius=0.01, color='r', alpha=1)
+                circ5 = plt.Circle((nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"]), radius=nodes["10.0.0.14"][address]["distance"], color='b', alpha=0.1)
+                circ6 = plt.Circle((nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"]), radius=0.01, color='r', alpha=1)
+                ax.cla()
+                ax.set_xlim((-5, 5))
+                ax.set_ylim((-5, 5))
+                ax.add_patch(circ1)
+                ax.add_patch(circ2)    
+                ax.add_patch(circ3)
+                ax.add_patch(circ4) 
+                ax.add_patch(circ5)
+                ax.add_patch(circ6)
+		
+                circ = plt.Circle(position, radius=0.15, color='r', alpha=1)
+                ax.add_patch(circ)
+                plt.draw()
+                plt.pause(0.0001)
                 
             if printing:
                 print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe) 

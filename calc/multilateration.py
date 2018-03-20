@@ -23,6 +23,7 @@ def multilateration(data, startingPoint=p0, plotEnabled=False):
 	
 	if plotEnabled:
 		fig = plt.figure()
+		plt.ion()
 		ax = fig.add_subplot(1, 1, 1)
 		ax.set_xlim((-5, 13))
 		ax.set_ylim((-5, 13))
