@@ -25,7 +25,7 @@ broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 
 def sendServerInfo(ip):
-    message = "position_server: " + ip + ":" + str(LISTEN_PORT)
+    message = "CONTROL_COMMAND:" + chr(10) + chr(32) + "position_server: " + ip + ":" + str(LISTEN_PORT)
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
@@ -72,15 +72,16 @@ def main(argv):
             counter = data['counter']
             times[ip] = timestamp
 
-            if not nodes[ip]: 
+            if ip not in nodes: 
                 nodes[ip] = dict()
             
-            if not nodes[ip][address]: 
+            if address not in nodes[ip]: 
                 nodes[ip][address] = dict()
                 nodes[ip][address]["currentCounter"] = counter
+                nodes[ip][address]["currentCounterAdvCount"] = 0
                 nodes[ip][address]["rssi"] = list()
 
-            if not nodes[ip][address]["kalman"]:
+            if "kalman" not in nodes[ip][address]:
                 nodes[ip][address]["kalman"] = KalmanFilter(dim_x=1, dim_z=1)
                 nodes[ip][address]["kalman"].x = np.array([[-30.]])
                 nodes[ip][address]["kalman"].F = np.array([[1.]])
@@ -93,7 +94,7 @@ def main(argv):
                 nodes[ip][address]["currentCounterAdvCount"] += 1
             else:
                 nodes[ip][address]["currentCounter"] = counter
-                nodes[ip][address]["currentCounterAdvCount"] = 0
+                nodes[ip][address]["currentCounterAdvCount"] = 1
             
             if nodes[ip][address]["currentCounterAdvCount"] == 3:
                 nodes[ip][address]["rssi"].append(rssi) 
@@ -106,7 +107,7 @@ def main(argv):
                 print("IP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[ip][address]["filteredRssi"])
 
                 nodes[ip][address]["rssi"] = list()
-
+                
             if printing:
                 print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe) 
 

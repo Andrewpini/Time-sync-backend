@@ -34,7 +34,7 @@ if DB_ENABLED:
 
 
 def sendServerInfo(ip):
-    message = "position_server: " + ip + ":" + str(LISTEN_PORT)
+    message = "CONTROL_COMMAND:" + chr(10) + chr(32) + "position_server: " + ip + ":" + str(LISTEN_PORT)
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
 def main(argv):
