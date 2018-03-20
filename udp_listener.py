@@ -15,9 +15,6 @@ LISTEN_PORT = 11001
 BROADCAST_IP = "255.255.255.255"
 BROADCAST_PORT = 10000
 
-
-
-
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
 counter = 1
