@@ -58,6 +58,8 @@ nodes["93:94:07:73:96:1e"] = Node(nodeID="93:94:07:73:96:1e", x=2, y=0)
 nodes["63:c3:af:19:3d:a0"] = Node(nodeID="63:c3:af:19:3d:a0", x=0, y=0)
 nodes["88:eb:88:71:90:e8"] = Node(nodeID="88:eb:88:71:90:e8", x=0, y=2)
 
+tags = dict()
+
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
 times = {}
@@ -126,6 +128,8 @@ def main(argv):
                     nodes[nodeID].tags[address] = Tag(address)
                     nodes[nodeID].tags[address].currentCounter = counter
                     nodes[nodeID].tags[address].currentCounterAdvCount  = 0
+                    if address not in tags:
+                        tags[address] = 1
 
                 if nodes[nodeID].tags[address].currentCounter == counter:
                     nodes[nodeID].tags[address].currentCounterAdvCount += 1
@@ -150,27 +154,37 @@ def main(argv):
                     nodes[nodeID].tags[address].rssi = list()
                     totalCounter += 1
                 
-                if totalCounter > 0 and totalCounter % 10 == 0:
-                    positions = list()
+                if totalCounter > 0 and totalCounter % 20 == 0:
                     ax.cla()
-                    ax.set_xlim((-5, 5))
-                    ax.set_ylim((-5, 5))
-
-                    for _, node in nodes.items():
-                        x = node.position.x
-                        y = node.position.y
-                        radius = node.tags[address].distance
-                        positions.append((x, y, radius))
-
-                        circle = plt.Circle((x, y), radius=radius, color='b', alpha=0.1)
-                        center = plt.Circle((x, y), radius=0.01, color='r', alpha=1)
-                        ax.add_patch(circle)
-                        ax.add_patch(center)
+                    ax.set_xlim((-3, 5))
+                    ax.set_ylim((-3, 5))
+                    color = "b"
                     
-                    position = multi.multilateration(positions)
-                    
-                    positionIndicator = plt.Circle(position, radius=0.15, color='r', alpha=1)
-                    ax.add_patch(positionIndicator)
+                    for tagAddress in tags:
+                        positions = list()
+
+                        for _, node in nodes.items():
+                            x = node.position.x
+                            y = node.position.y
+                            radius = node.tags[tagAddress].distance
+                            positions.append((x, y, radius))
+
+                            if color == "b":
+                                color = "k"
+                            else:
+                                color = "b"
+
+                            circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
+                            center = plt.Circle((x, y), radius=0.01, color='r', alpha=1)
+                            ax.add_patch(circle)
+                            ax.add_patch(center)
+                        
+                        if len(positions) > 2:
+                            position = multi.multilateration(positions)
+                            tags[tagAddress] = position
+                        
+                        positionIndicator = plt.Circle(tags[tagAddress], radius=0.15, color=color, alpha=1)
+                        ax.add_patch(positionIndicator)
 
                     plt.draw()
                     plt.pause(0.0001)
