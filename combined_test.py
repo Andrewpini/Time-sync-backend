@@ -158,10 +158,15 @@ def main(argv):
                     ax.cla()
                     ax.set_xlim((-3, 5))
                     ax.set_ylim((-3, 5))
+                    plt.grid()
                     color = "b"
                     
                     for tagAddress in tags:
                         positions = list()
+                        if color == "b":
+                            color = "k"
+                        else:
+                            color = "b"
 
                         for _, node in nodes.items():
                             x = node.position.x
@@ -169,13 +174,9 @@ def main(argv):
                             radius = node.tags[tagAddress].distance
                             positions.append((x, y, radius))
 
-                            if color == "b":
-                                color = "k"
-                            else:
-                                color = "b"
 
                             circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
-                            center = plt.Circle((x, y), radius=0.01, color='r', alpha=1)
+                            center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
                             ax.add_patch(circle)
                             ax.add_patch(center)
                         
