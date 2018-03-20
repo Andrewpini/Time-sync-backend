@@ -37,18 +37,18 @@ def main(argv):
     del(args)
     totalCounter = 0
     nodes = dict()
-    nodes["10.0.0.11"] = dict()
-    nodes["10.0.0.12"] = dict()
-    nodes["10.0.0.14"] = dict()
-    nodes["10.0.0.11"]["position"] = dict()
-    nodes["10.0.0.12"]["position"] = dict()
-    nodes["10.0.0.14"]["position"] = dict()
-    nodes["10.0.0.11"]["position"]["x"] = 2
-    nodes["10.0.0.11"]["position"]["y"] = 0
-    nodes["10.0.0.12"]["position"]["x"] = 0
-    nodes["10.0.0.12"]["position"]["y"] = 0
-    nodes["10.0.0.14"]["position"]["x"] = 0
-    nodes["10.0.0.14"]["position"]["y"] = 2
+    nodes["93:94:07:73:96:1e"] = dict()
+    nodes["63:c3:af:19:3d:a0"] = dict()
+    nodes["88:eb:88:71:90:e8"] = dict()
+    nodes["93:94:07:73:96:1e"]["position"] = dict()
+    nodes["63:c3:af:19:3d:a0"]["position"] = dict()
+    nodes["88:eb:88:71:90:e8"]["position"] = dict()
+    nodes["93:94:07:73:96:1e"]["position"]["x"] = 2
+    nodes["93:94:07:73:96:1e"]["position"]["y"] = 0
+    nodes["63:c3:af:19:3d:a0"]["position"]["x"] = 0
+    nodes["63:c3:af:19:3d:a0"]["position"]["y"] = 0
+    nodes["88:eb:88:71:90:e8"]["position"]["x"] = 0
+    nodes["88:eb:88:71:90:e8"]["position"]["y"] = 2
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -88,6 +88,7 @@ def main(argv):
             data = json.loads(rawData)
             printing = False
             ip = addr[0]
+            nodeID = data['nodeID']
             timestamp = data['timestamp']
             address = data['address']
             channel = data['channel']
@@ -97,80 +98,79 @@ def main(argv):
             counter = data['counter']
             times[ip] = timestamp
 
-            if ip not in nodes: 
-                nodes[ip] = dict()
-            
-            if address not in nodes[ip]: 
-                nodes[ip][address] = dict()
-                nodes[ip][address]["currentCounter"] = counter
-                nodes[ip][address]["currentCounterAdvCount"] = 0
-                nodes[ip][address]["rssi"] = list()
-
-            if "kalman" not in nodes[ip][address]:
-                nodes[ip][address]["kalman"] = KalmanFilter(dim_x=1, dim_z=1)
-                nodes[ip][address]["kalman"].x = np.array([[-30.]])
-                nodes[ip][address]["kalman"].F = np.array([[1.]])
-                nodes[ip][address]["kalman"].H = np.array([[1.]])
-                nodes[ip][address]["kalman"].P = np.array([[0.]])
-                nodes[ip][address]["kalman"].R = 1.4
-                nodes[ip][address]["kalman"].Q = 0.065
-
-            if nodes[ip][address]["currentCounter"] == counter:
-                nodes[ip][address]["currentCounterAdvCount"] += 1
-            else:
-                nodes[ip][address]["currentCounter"] = counter
-                nodes[ip][address]["currentCounterAdvCount"] = 1
-            
-            if nodes[ip][address]["currentCounterAdvCount"] == 3:
-                nodes[ip][address]["rssi"].append(rssi) 
-                selectedChannelRssi = max(nodes[ip][address]["rssi"])
-
-                nodes[ip][address]["kalman"].predict()
-                nodes[ip][address]["kalman"].update(selectedChannelRssi)
-                nodes[ip][address]["filteredRssi"] = nodes[ip][address]["kalman"].x[0]
-
-                # Log-distance path loss model parameters
-                rssi_d0 = -40.0
-                d0 = 1.0
-                n = 2.6
-                xo = 1.1
-		        
-                nodes[ip][address]["distance"] = round(distance.logDistancePathLoss(nodes[ip][address]["filteredRssi"], rssi_d0, d0, n, xo), 2)
-
-                print("IP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[ip][address]["filteredRssi"], "\tDistance: ", nodes[ip][address]["distance"])
-
-                nodes[ip][address]["rssi"] = list()
-                totalCounter += 1
-            
-            if totalCounter > 0 and totalCounter % 10 == 0:
-                position = multi.multilateration({  (nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"], nodes["10.0.0.11"][address]["distance"]), 
-                                                    (nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"], nodes["10.0.0.12"][address]["distance"]),
-                                                    (nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"], nodes["10.0.0.14"][address]["distance"])
-                                                })
-
-                circ1 = plt.Circle((nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"]), radius=nodes["10.0.0.11"][address]["distance"], color='b', alpha=0.1)
-                circ2 = plt.Circle((nodes["10.0.0.11"]["position"]["x"], nodes["10.0.0.11"]["position"]["y"]), radius=0.01, color='r', alpha=1)
-                circ3 = plt.Circle((nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"]), radius=nodes["10.0.0.12"][address]["distance"], color='b', alpha=0.1)
-                circ4 = plt.Circle((nodes["10.0.0.12"]["position"]["x"], nodes["10.0.0.12"]["position"]["y"]), radius=0.01, color='r', alpha=1)
-                circ5 = plt.Circle((nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"]), radius=nodes["10.0.0.14"][address]["distance"], color='b', alpha=0.1)
-                circ6 = plt.Circle((nodes["10.0.0.14"]["position"]["x"], nodes["10.0.0.14"]["position"]["y"]), radius=0.01, color='r', alpha=1)
-                ax.cla()
-                ax.set_xlim((-5, 5))
-                ax.set_ylim((-5, 5))
-                ax.add_patch(circ1)
-                ax.add_patch(circ2)    
-                ax.add_patch(circ3)
-                ax.add_patch(circ4) 
-                ax.add_patch(circ5)
-                ax.add_patch(circ6)
-		
-                circ = plt.Circle(position, radius=0.15, color='r', alpha=1)
-                ax.add_patch(circ)
-                plt.draw()
-                plt.pause(0.0001)
+            if crc == 1 and lpe == 0:
+                if nodeID not in nodes: 
+                    nodes[nodeID] = dict()
                 
-            if printing:
-                print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe) 
+                if address not in nodes[nodeID]: 
+                    nodes[nodeID][address] = dict()
+                    nodes[nodeID][address]["currentCounter"] = counter
+                    nodes[nodeID][address]["currentCounterAdvCount"] = 0
+                    nodes[nodeID][address]["rssi"] = list()
+
+                if "kalman" not in nodes[nodeID][address]:
+                    nodes[nodeID][address]["kalman"] = KalmanFilter(dim_x=1, dim_z=1)
+                    nodes[nodeID][address]["kalman"].x = np.array([[-30.]])
+                    nodes[nodeID][address]["kalman"].F = np.array([[1.]])
+                    nodes[nodeID][address]["kalman"].H = np.array([[1.]])
+                    nodes[nodeID][address]["kalman"].P = np.array([[0.]])
+                    nodes[nodeID][address]["kalman"].R = 1.4
+                    nodes[nodeID][address]["kalman"].Q = 0.065
+
+                if nodes[nodeID][address]["currentCounter"] == counter:
+                    nodes[nodeID][address]["currentCounterAdvCount"] += 1
+                else:
+                    nodes[nodeID][address]["currentCounter"] = counter
+                    nodes[nodeID][address]["currentCounterAdvCount"] = 1
+                
+                if nodes[nodeID][address]["currentCounterAdvCount"] == 3:
+                    nodes[nodeID][address]["rssi"].append(rssi) 
+                    selectedChannelRssi = max(nodes[nodeID][address]["rssi"])
+
+                    nodes[nodeID][address]["kalman"].predict()
+                    nodes[nodeID][address]["kalman"].update(selectedChannelRssi)
+                    nodes[nodeID][address]["filteredRssi"] = nodes[nodeID][address]["kalman"].x[0]
+
+                    # Log-distance path loss model parameters
+                    rssi_d0 = -40.0
+                    d0 = 1.0
+                    n = 2.6
+                    xo = 1.1
+                    
+                    nodes[nodeID][address]["distance"] = round(distance.logDistancePathLoss(nodes[nodeID][address]["filteredRssi"], rssi_d0, d0, n, xo), 2)
+
+                    print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID][address]["filteredRssi"], "\tDistance: ", nodes[nodeID][address]["distance"])
+
+                    nodes[nodeID][address]["rssi"] = list()
+                    totalCounter += 1
+                
+                if totalCounter > 0 and totalCounter % 10 == 0:
+                    positions = list()
+                    ax.cla()
+                    ax.set_xlim((-5, 5))
+                    ax.set_ylim((-5, 5))
+
+                    for _, node in nodes.items():
+                        x = node["position"]["x"]
+                        y = node["position"]["y"]
+                        radius = node[address]["distance"]
+                        positions.append((x, y, radius))
+
+                        circle = plt.Circle((x, y), radius=radius, color='b', alpha=0.1)
+                        center = plt.Circle((x, y), radius=0.01, color='r', alpha=1)
+                        ax.add_patch(circle)
+                        ax.add_patch(center)
+                    
+                    position = multi.multilateration(positions)
+                    
+                    positionIndicator = plt.Circle(position, radius=0.15, color='r', alpha=1)
+                    ax.add_patch(positionIndicator)
+
+                    plt.draw()
+                    plt.pause(0.0001)
+                    
+                if printing:
+                    print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe) 
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
