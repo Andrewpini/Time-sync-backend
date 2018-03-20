@@ -53,25 +53,10 @@ class Node:
         self.position = Position(x, y)
         self.tags = dict()
         
-
-
-
 nodes = dict()
-nodes["93:94:07:73:96:1e"] = Node("93:94:07:73:96:1e", x=2, y=0)
-nodes["63:c3:af:19:3d:a0"] = Node("63:c3:af:19:3d:a0", x=0, y=0)
-nodes["88:eb:88:71:90:e8"] = Node("88:eb:88:71:90:e8", x=0, y=2)
-"""
-nodes["93:94:07:73:96:1e"]["position"] = dict()
-nodes["63:c3:af:19:3d:a0"]["position"] = dict()
-nodes["88:eb:88:71:90:e8"]["position"] = dict()
-nodes["93:94:07:73:96:1e"]["position"]["x"] = 2
-nodes["93:94:07:73:96:1e"]["position"]["y"] = 0
-nodes["63:c3:af:19:3d:a0"]["position"]["x"] = 0
-nodes["63:c3:af:19:3d:a0"]["position"]["y"] = 0
-nodes["88:eb:88:71:90:e8"]["position"]["x"] = 0
-nodes["88:eb:88:71:90:e8"]["position"]["y"] = 2
-"""
-
+nodes["93:94:07:73:96:1e"] = Node(nodeID="93:94:07:73:96:1e", x=2, y=0)
+nodes["63:c3:af:19:3d:a0"] = Node(nodeID="63:c3:af:19:3d:a0", x=0, y=0)
+nodes["88:eb:88:71:90:e8"] = Node(nodeID="88:eb:88:71:90:e8", x=0, y=2)
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
@@ -141,18 +126,6 @@ def main(argv):
                     nodes[nodeID].tags[address] = Tag(address)
                     nodes[nodeID].tags[address].currentCounter = counter
                     nodes[nodeID].tags[address].currentCounterAdvCount  = 0
-                    #nodes[nodeID][address]["rssi"] = list()
-
-                """
-                if "kalman" not in nodes[nodeID][address]:
-                    nodes[nodeID][address]["kalman"] = KalmanFilter(dim_x=1, dim_z=1)
-                    nodes[nodeID][address]["kalman"].x = np.array([[-30.]])
-                    nodes[nodeID][address]["kalman"].F = np.array([[1.]])
-                    nodes[nodeID][address]["kalman"].H = np.array([[1.]])
-                    nodes[nodeID][address]["kalman"].P = np.array([[0.]])
-                    nodes[nodeID][address]["kalman"].R = 1.4
-                    nodes[nodeID][address]["kalman"].Q = 0.065
-                """
 
                 if nodes[nodeID].tags[address].currentCounter == counter:
                     nodes[nodeID].tags[address].currentCounterAdvCount += 1
