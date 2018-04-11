@@ -17,9 +17,9 @@ def bleChannelToFrequency(channel):
 # rssi is measured RSSI
 # rssi_d0 is RSSI at distance d0
 # n is the path loss exponent
-# xo is zero-mean Gaussian distributed random variable with standard deviation to compensate for shadowing effects
-def logDistancePathLoss(rssi, rssi_d0, d0, n, xo):
-	rhs = -(rssi - rssi_d0 - xo) / (10 * n)
+# Xo is zero-mean Gaussian distributed random variable with standard deviation to compensate for shadowing effects
+def logDistancePathLoss(rssi, rssi_d0, d0, n, Xo):
+	rhs = -(rssi - rssi_d0 - Xo) / (10 * n)
 	distance = d0 * math.pow(10, rhs)
 
 	return distance
