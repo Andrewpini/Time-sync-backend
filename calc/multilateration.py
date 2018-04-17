@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import leastsq
 
-testData = [(0, 0, 5.144), 
-			(3, 0, 4.612), 
-			(6, 0, 6.223), 
-			(0, 3, 2.323),
-			(3, 3, 2.301),
-			(6, 3, 5.712),
-			(0, 6, 1.288),
-			(3, 6, 1.949),
-			(6, 6, 5.025) ]
+testData = [(0, 0, 2, 5.144), 
+			(3, 0, 2, 4.612), 
+			(6, 0, 2, 6.223), 
+			(0, 3, 2, 2.323),
+			(3, 3, 2, 2.301),
+			(6, 3, 2, 5.712),
+			(0, 6, 2, 1.288),
+			(3, 6, 2, 1.949),
+			(6, 6, 2, 5.025) ]
 	
-p0 = [0, 0]
+p0 = [0, 0, 1]
 
 def multilateration(data, startingPoint=p0, plotEnabled=False):
 	def residuals(point, data):
-		return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) / abs(p[2]) - 1 for p in data])
+		return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) / abs(p[3]) - 1 for p in data])
 
 	plsq = leastsq(residuals, p0, args=(data))
 	
@@ -33,7 +33,7 @@ def multilateration(data, startingPoint=p0, plotEnabled=False):
 
 		# Plot section
 		for p in data:
-			circ = plt.Circle((p[0], p[1]), radius=p[2], color='b', alpha=0.1)
+			circ = plt.Circle((p[0], p[1]), radius=p[3], color='b', alpha=0.1)
 			circ2 = plt.Circle((p[0], p[1]), radius=0.01, color='r', alpha=1)
 			ax.add_patch(circ)
 			ax.add_patch(circ2)
