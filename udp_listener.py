@@ -5,7 +5,6 @@ import json
 import pymysql
 from calc import distance
 
-
 DB_ENABLED = False
 GRAPH_ENABLED = False
 
@@ -67,7 +66,7 @@ def main(argv):
         plt.axis([0, 3, -100, 0])
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
-    print("Starting Interval, press CTRL+C to stop.")
+    print("Starting... Press CTRL + C to stop.")
     interval.start() 
 
     while True:
