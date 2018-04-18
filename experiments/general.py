@@ -2,11 +2,12 @@ import sys, getopt
 import socket
 import json
 import pymysql
+import numpy as np
 sys.path.insert(0,'..')
 from calc import distance
 from utils import Interval
 
-DB_ENABLED = True
+DB_ENABLED = False
 GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
@@ -41,6 +42,10 @@ def main(argv):
     distance = None
     label = None
     sampleNumber = 0
+    samples = dict()
+    samples["channel_37"] = list()
+    samples["channel_38"] = list()
+    samples["channel_39"] = list()
 
     opts, args = getopt.getopt(argv,"cdghil:o",["channel=", "distance=", "graph=", "ip=", "label="])
     del(args)
@@ -114,12 +119,15 @@ def main(argv):
                 if channel == 37:
                     color = 'r'
                     name = "Channel 37"
+                    distance = 1
                 elif channel == 38:
                     color = 'b'
                     name = "Channel 38"
+                    distance = 2
                 elif channel == 39:
                     color = 'g'
                     name = "Channel 39"
+                    distance = 3
                 
                 plt.scatter(distance, rssi, color=color, alpha=0.1, label=name)
                 plt.pause(0.0001)
@@ -127,8 +135,20 @@ def main(argv):
             sampleNumber += 1
             print(sampleNumber , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", data['LPE']) 
 
+            if channel == 37:
+                samples["channel_37"].append(rssi)
+            elif channel == 38:
+                samples["channel_38"].append(rssi)
+            elif channel == 39:
+                samples["channel_39"].append(rssi)
+
         except KeyboardInterrupt:
-            print("Shutting down interval...")
+            print("")
+            print("Standard deviation for channel 37 after ", len(samples["channel_37"]), " samples: ", np.std(samples["channel_37"], ddof=1))
+            print("Standard deviation for channel 38 after ", len(samples["channel_38"]), " samples: ", np.std(samples["channel_38"], ddof=1))
+            print("Standard deviation for channel 39 after ", len(samples["channel_39"]), " samples: ", np.std(samples["channel_39"], ddof=1))
+            print("")
+            print("Shutting down...")
             interval.stop()
             break
 

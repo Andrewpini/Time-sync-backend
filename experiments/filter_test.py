@@ -14,6 +14,7 @@ DB_ENABLED = True
 GRAPH_ENABLED = True
 PLOT_TIME = True
 PLOT_DISTANCE = False
+SAMPLES_FOR_EACH_UPDATE = 20
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -56,7 +57,7 @@ def main(argv):
     kalman.F = np.array([[1.]])
     kalman.H = np.array([[1.]])
     kalman.P = np.array([[0.]])
-    kalman.R = 1.4
+    kalman.R = 3.19
     kalman.Q = 0.065
 
     opts, args = getopt.getopt(argv,"cdfghil:o",["channel=", "distance=", "filter=", "graph=", "ip=", "label="])
@@ -100,6 +101,7 @@ def main(argv):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
+        ax.grid(color='#cccccc', linestyle='-', linewidth=1)
         ax.legend(loc="lower right")
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
@@ -124,7 +126,7 @@ def main(argv):
             syncController = data['syncController']
             channel = data['channel']
 
-            if chosenChannel == channel:
+            if chosenChannel == channel and crc == 1 and lpe == 0:
 
                 kalman.predict()
                 kalman.update(rssi)
@@ -132,7 +134,7 @@ def main(argv):
                 filteredRssiList.append(filteredRssi)
                 xAxis.append(round(sampleNumber / 2))
                 rawRssiList.append(data['RSSI'])
-                plt.axis([0, xAxis[-1] + 20, -100, 0])
+                plt.axis([0, xAxis[-1] + 20, -50, -20])
                 if sampleNumber == 1:
                     plt.legend(loc="lower right")
 
@@ -142,7 +144,7 @@ def main(argv):
                     cursor.execute(sql)
                     db.commit()
 
-                if GRAPH_ENABLED:
+                if GRAPH_ENABLED and (sampleNumber % SAMPLES_FOR_EACH_UPDATE) == 0:
                     color = 'k'
                     name = "Unknown channel"
                     if channel == 37:
@@ -159,7 +161,7 @@ def main(argv):
                         plt.scatter(distance, filteredRssi, color=color, alpha=0.1, label=name)
                         plt.scatter(distance, rssi, color='k', alpha=0.1, label=name)
                     elif PLOT_TIME:
-                        ax.plot(xAxis, rawRssiList, 'r-', label="Raw")
+                        ax.plot(xAxis, rawRssiList, 'r-', label="Raw", alpha=0.7)
                         ax.plot(xAxis, filteredRssiList, 'b-', label="Kalman", linewidth=3)
                     plt.pause(0.0001)
 
