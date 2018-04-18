@@ -5,6 +5,7 @@ import json
 import pymysql
 from calc import distance
 
+
 DB_ENABLED = False
 GRAPH_ENABLED = False
 
@@ -66,7 +67,7 @@ def main(argv):
         plt.axis([0, 3, -100, 0])
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
-    print("Starting... Press CTRL + C to stop.")
+    print("Starting Interval, press CTRL+C to stop.")
     interval.start() 
 
     while True:
@@ -124,7 +125,11 @@ def main(argv):
                 printing = True
 
             if printing:
-                print(counter , "\tFrom", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE']) 
+                if data['CRC'] == 0:
+                    colorCode = "\u001b[31m"
+                else:
+                    colorCode = ""
+                print(colorCode, " From", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE'], "\tSyncer: ", data['syncController'], "\033[0m")
 
         except KeyboardInterrupt:
             print("Shutting down interval...")

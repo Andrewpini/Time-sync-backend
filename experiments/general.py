@@ -4,9 +4,9 @@ import json
 import pymysql
 sys.path.insert(0,'..')
 from calc import distance
-import utils
+from utils import Interval
 
-DB_ENABLED = False
+DB_ENABLED = True
 GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
@@ -17,8 +17,6 @@ BROADCAST_PORT = 10000
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
-counter = 1
-times = {}
 
 broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -42,22 +40,23 @@ def main(argv):
     channel = False
     distance = None
     label = None
+    sampleNumber = 0
 
     opts, args = getopt.getopt(argv,"cdghil:o",["channel=", "distance=", "graph=", "ip=", "label="])
     del(args)
 
     if len(opts) == 0:
-        print("rssi_distance.py -i <server IP address>")
+        print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("A distance and label must be set for the test to start: rssi_distance.py --distance <distance> --label '<label>'")
+            print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
             sys.exit()
         elif opt in ("-i", "--ip"):
             ip = arg
             print(ip)
         elif opt in ("-d", "--distance"):
-            distance = arg
+            distance = int(arg)
             print("Test for distance: ", distance)
         elif opt in ("-l", "--label"):
             label = arg
@@ -67,19 +66,21 @@ def main(argv):
         elif opt in ("-g", "--graph"):
             GRAPH_ENABLED = True
         else:
-            print("A distance and label must be set for the test to start: rssi_distance.py --distance <distance> --label '<label>'")
+            print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
             sys.exit(2)
 
     if not distance or not label:
-        print("A distance and label must be set for the test to start: rssi_distance.py --distance <distance> --label '<label>'")
+        print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
         sys.exit(2)
  
     if GRAPH_ENABLED:
         import matplotlib.pyplot as plt
         plt.ion()
-        plt.axis([0, distance + 2, -100, 0])
+        plt.axis([0, distance * 2, -80, -20])
+        
+        plt.legend(loc="lower right")
 
-    interval = utils.Interval.Interval(2, sendServerInfo, args=[ip,])
+    interval = Interval.Interval(2, sendServerInfo, args=[ip,])
     print("Starting... Press CTRL + C to stop.")
     interval.start() 
 
@@ -88,7 +89,8 @@ def main(argv):
         try:
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
-            
+
+
             ip = addr[0]
             nodeID = data['nodeID']
             timestamp = data['timestamp']
@@ -97,28 +99,33 @@ def main(argv):
             crc = data['CRC']
             lpe = data['LPE']
             counter = data['counter']
-
-            #delta = data['timestamp'] - times[addr[0]]
-            times[addr[0]] = data['timestamp']
+            syncController = data['syncController']
+            channel = data['channel']
 
             if DB_ENABLED:
-                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, crc, lpe, label)
+                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, crc, lpe, syncController, label)
 
                 cursor.execute(sql)
                 db.commit()
 
             if GRAPH_ENABLED:
+                color = 'k'
+                name = "Unknown channel"
                 if channel == 37:
                     color = 'r'
+                    name = "Channel 37"
                 elif channel == 38:
                     color = 'b'
-                elif color == 39:
+                    name = "Channel 38"
+                elif channel == 39:
                     color = 'g'
+                    name = "Channel 39"
                 
-                plt.scatter(distance, rssi, color=color, alpha=0.1)
+                plt.scatter(distance, rssi, color=color, alpha=0.1, label=name)
                 plt.pause(0.0001)
 
-            print(counter , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", data['LPE']) 
+            sampleNumber += 1
+            print(sampleNumber , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", data['LPE']) 
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
