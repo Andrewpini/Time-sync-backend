@@ -7,8 +7,8 @@ sys.path.insert(0,'..')
 from calc import distance
 from utils import Interval
 
-DB_ENABLED = False
-GRAPH_ENABLED = False
+DB_ENABLED = True
+GRAPH_ENABLED = True
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -61,7 +61,7 @@ def main(argv):
             ip = arg
             print(ip)
         elif opt in ("-d", "--distance"):
-            distance = int(arg)
+            distance = float(arg)
             print("Test for distance: ", distance)
         elif opt in ("-l", "--label"):
             label = arg
@@ -81,7 +81,7 @@ def main(argv):
     if GRAPH_ENABLED:
         import matplotlib.pyplot as plt
         plt.ion()
-        plt.axis([0, distance * 2, -80, -20])
+        plt.axis([36, 40, -80, -20])
         
         plt.legend(loc="lower right")
 
@@ -119,21 +119,24 @@ def main(argv):
                 if channel == 37:
                     color = 'r'
                     name = "Channel 37"
-                    distance = 1
                 elif channel == 38:
                     color = 'b'
                     name = "Channel 38"
-                    distance = 2
                 elif channel == 39:
                     color = 'g'
                     name = "Channel 39"
-                    distance = 3
                 
-                plt.scatter(distance, rssi, color=color, alpha=0.1, label=name)
+                plt.scatter(channel, rssi, color=color, alpha=0.1, label=name)
                 plt.pause(0.0001)
 
             sampleNumber += 1
-            print(sampleNumber , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", data['LPE']) 
+
+            if crc == 0:
+                colorCode = "\u001b[31m"
+            else:
+                colorCode = ""
+
+            print(colorCode, sampleNumber , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", lpe, "\033[0m")
 
             if channel == 37:
                 samples["channel_37"].append(rssi)
