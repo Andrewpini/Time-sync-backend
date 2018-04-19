@@ -8,7 +8,7 @@ from calc import distance
 from utils import Interval
 
 DB_ENABLED = True
-GRAPH_ENABLED = True
+GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -108,7 +108,7 @@ def main(argv):
             channel = data['channel']
 
             if DB_ENABLED:
-                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, distance, crc, lpe, syncController, label)
+                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %f, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, distance, crc, lpe, syncController, label)
 
                 cursor.execute(sql)
                 db.commit()
