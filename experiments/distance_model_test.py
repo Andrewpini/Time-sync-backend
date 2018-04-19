@@ -2,12 +2,11 @@ import sys, getopt
 import socket
 import json
 import pymysql
-import numpy as np
 sys.path.insert(0,'..')
 from calc import distance
 from utils import Interval
 
-DB_ENABLED = False
+DB_ENABLED = True
 GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
@@ -39,15 +38,12 @@ def main(argv):
     global GRAPH_ENABLED
     global DB_ENABLED
     channel = False
-    distance = None
+    trueDistance = None
     label = None
+    model = None
     sampleNumber = 0
-    samples = dict()
-    samples["channel_37"] = list()
-    samples["channel_38"] = list()
-    samples["channel_39"] = list()
 
-    opts, args = getopt.getopt(argv,"cdghil:o",["channel=", "distance=", "graph=", "ip=", "label="])
+    opts, args = getopt.getopt(argv,"cdghilm:o",["channel=", "distance=", "graph=", "ip=", "label=", "model="])
     del(args)
 
     if len(opts) == 0:
@@ -61,11 +57,14 @@ def main(argv):
             ip = arg
             print(ip)
         elif opt in ("-d", "--distance"):
-            distance = int(arg)
-            print("Test for distance: ", distance)
+            trueDistance = int(arg)
+            print("Test for distance: ", trueDistance)
         elif opt in ("-l", "--label"):
             label = arg
             print("Label for test: ", label)
+        elif opt in ("-m", "--model"):
+            model = arg
+            print("Model for testing: ", model)
         elif opt in ("-c", "--channel"):
             channel = int(arg)
         elif opt in ("-g", "--graph"):
@@ -74,14 +73,14 @@ def main(argv):
             print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
             sys.exit(2)
 
-    if not distance or not label:
+    if not trueDistance or not label:
         print("A distance and label must be set for the test to start: general.py --distance <distance> --label '<label>'")
         sys.exit(2)
  
     if GRAPH_ENABLED:
         import matplotlib.pyplot as plt
         plt.ion()
-        plt.axis([0, distance * 2, -80, -20])
+        plt.axis([0, trueDistance * 2, -80, -20])
         
         plt.legend(loc="lower right")
 
@@ -95,7 +94,6 @@ def main(argv):
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
 
-
             ip = addr[0]
             nodeID = data['nodeID']
             timestamp = data['timestamp']
@@ -108,7 +106,7 @@ def main(argv):
             channel = data['channel']
 
             if DB_ENABLED:
-                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, distance, crc, lpe, syncController, label)
+                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, crc, lpe, syncController, label)
 
                 cursor.execute(sql)
                 db.commit()
@@ -119,36 +117,21 @@ def main(argv):
                 if channel == 37:
                     color = 'r'
                     name = "Channel 37"
-                    distance = 1
                 elif channel == 38:
                     color = 'b'
                     name = "Channel 38"
-                    distance = 2
                 elif channel == 39:
                     color = 'g'
                     name = "Channel 39"
-                    distance = 3
                 
-                plt.scatter(distance, rssi, color=color, alpha=0.1, label=name)
+                plt.scatter(trueDistance, rssi, color=color, alpha=0.1, label=name)
                 plt.pause(0.0001)
 
             sampleNumber += 1
             print(sampleNumber , "\tFrom", ip, "\tTimestamp: ", timestamp, "\tCounter: ", counter, "\tAddr.: ", address, "\tChannel: ", channel, "\tRSSI: ", rssi, "\tCRC: ", crc, "\tLPE: ", data['LPE']) 
 
-            if channel == 37:
-                samples["channel_37"].append(rssi)
-            elif channel == 38:
-                samples["channel_38"].append(rssi)
-            elif channel == 39:
-                samples["channel_39"].append(rssi)
-
         except KeyboardInterrupt:
-            print("")
-            print("Standard deviation for channel 37 after ", len(samples["channel_37"]), " samples: ", np.std(samples["channel_37"], ddof=1))
-            print("Standard deviation for channel 38 after ", len(samples["channel_38"]), " samples: ", np.std(samples["channel_38"], ddof=1))
-            print("Standard deviation for channel 39 after ", len(samples["channel_39"]), " samples: ", np.std(samples["channel_39"], ddof=1))
-            print("")
-            print("Shutting down...")
+            print("Shutting down interval...")
             interval.stop()
             break
 

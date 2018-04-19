@@ -139,7 +139,7 @@ def main(argv):
                     plt.legend(loc="lower right")
 
                 if DB_ENABLED:
-                    sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, crc, lpe, syncController, label)
+                    sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, distance, crc, lpe, syncController, label)
 
                     cursor.execute(sql)
                     db.commit()
