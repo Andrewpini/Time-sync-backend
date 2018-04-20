@@ -75,9 +75,14 @@ def main(argv):
         sys.exit(2)
 
     nodes = dict()
-    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=2, y=0)
-    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=0, y=0)
-    nodes["b0:44:d6:f0:48:65"] = Node(nodeID="88:eb:88:71:90:e8", x=0, y=2)
+    nodes["b0:cf:4e:01:80:c1"] = Node(nodeID="b0:cf:4e:01:80:c1", x=1.53, y=1.27, z=0)
+    nodes["b0:79:35:85:23:cd"] = Node(nodeID="b0:79:35:85:23:cd", x=3.85, y=1.34, z=0)
+    nodes["b0:b8:11:7d:73:91"] = Node(nodeID="b0:b8:11:7d:73:91", x=1.16, y=3.46, z=0)
+    nodes["b0:eb:88:71:90:e8"] = Node(nodeID="b0:eb:88:71:90:e8", x=3.27, y=3.46, z=0)
+    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=1.16, y=5.87, z=0)
+    nodes["b0:44:d6:f0:48:65"] = Node(nodeID="b0:44:d6:f0:48:65", x=3.27, y=5.75, z=0)
+    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=0, y=6.97, z=0)
+    nodes["b0:46:26:d6:60:14"] = Node(nodeID="b0:46:26:d6:60:14", x=1.16, y=7.95, z=0)
 
     tags = dict()
 
@@ -93,7 +98,7 @@ def main(argv):
         ax.grid(color='#cccccc', linestyle='-', linewidth=1)
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
-    print("Starting filter test... Press CTRL + C to stop.")
+    print("Starting positioning test... Press CTRL + C to stop.")
     interval.start() 
 
     while True:
@@ -139,9 +144,9 @@ def main(argv):
                     nodes[nodeID].tags[address].filteredRssi = filteredRssi
 
                     # Log-distance path loss model
-                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-40.0, d0=1.0, n=2.6, Xo=0.0), ndigits=2)
+                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-38.0, d0=1.0, n=2.6, Xo=0.0), ndigits=2)
 
-                    print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID].tags[address].filteredRssi, "\tDistance: ", nodes[nodeID].tags[address].distance)
+                    #print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID].tags[address].filteredRssi, "\tDistance: ", nodes[nodeID].tags[address].distance)
 
                     nodes[nodeID].tags[address].rssi = list()
                     totalCounter += 1
@@ -153,10 +158,11 @@ def main(argv):
                         db.commit()
                 
                 if totalCounter > 0 and totalCounter % 20 == 0:
-                    ax.cla()
-                    ax.set_xlim((-3, 5))
-                    ax.set_ylim((-3, 5))
-                    plt.grid()
+                    if GRAPH_ENABLED:
+                        ax.cla()
+                        ax.set_xlim((-5, 10))
+                        ax.set_ylim((-5, 15))
+                        plt.grid()
                     color = "b"
                     
                     for tagAddress in tags:
@@ -173,21 +179,23 @@ def main(argv):
                             radius = node.tags[tagAddress].distance
                             positions.append((x, y, z, radius))
 
-
-                            circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
-                            center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
-                            ax.add_patch(circle)
-                            ax.add_patch(center)
+                            if GRAPH_ENABLED:
+                                circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
+                                center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
+                                ax.add_patch(circle)
+                                ax.add_patch(center)
                         
-                        if len(positions) > 2:
+                        if len(positions) > 4:
                             position = multi.multilateration(positions)
                             tags[tagAddress] = position
+                            print(position)
                         
-                        positionIndicator = plt.Circle(tags[tagAddress], radius=0.15, color=color, alpha=1)
-                        ax.add_patch(positionIndicator)
-
-                    plt.draw()
-                    plt.pause(0.0001)
+                            if GRAPH_ENABLED:
+                                positionIndicator = plt.Circle(tags[tagAddress], radius=0.20, color="b", alpha=1)
+                                ax.add_patch(positionIndicator)
+                    if GRAPH_ENABLED:
+                        plt.draw()
+                        plt.pause(0.0001)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")

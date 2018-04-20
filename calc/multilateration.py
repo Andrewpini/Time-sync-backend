@@ -13,7 +13,7 @@ testData = [(0, 0, 2, 5.144),
 			(3, 6, 2, 1.949),
 			(6, 6, 2, 5.025) ]
 	
-p0 = [0, 0, 0]
+p0 = [1, 1, 1]
 
 def multilateration(data, startingPoint=p0, plotEnabled=False):
 	def residuals(point, data):
