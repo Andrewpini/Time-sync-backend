@@ -76,6 +76,10 @@ def main(argv):
             data = json.loads(rawData)
             printing = False
 
+            if "MAC" in data:
+                print("WHO AM I message from MAC", data["MAC"], ", IP is ", data["IP"])
+                continue
+
             #delta = data['timestamp'] - times[addr[0]]
             times[addr[0]] = data['timestamp']
 

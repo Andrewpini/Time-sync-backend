@@ -11,7 +11,7 @@ from calc import multilateration as multi
 from calc import distance
 
 
-DB_ENABLED = True
+DB_ENABLED = False
 GRAPH_ENABLED = True
 PLOT_TIME = True
 PLOT_DISTANCE = False
@@ -45,7 +45,6 @@ def sendServerInfo(ip):
 def main(argv):
     global GRAPH_ENABLED
     global DB_ENABLED
-    distance = None
     label = None
     totalCounter = 0
 
@@ -65,22 +64,20 @@ def main(argv):
         elif opt in ("-l", "--label"):
             label = arg
             print("Label for test: ", label)
-        elif opt in ("-c", "--channel"):
-            chosenChannel = int(arg)
         elif opt in ("-g", "--graph"):
             GRAPH_ENABLED = True
         else:
             print("A label must be set for the test to start: filter_test.py --label '<label>'")
             sys.exit(2)
 
-    if not distance or not label:
+    if not label:
         print("A label must be set for the test to start: filter_test.py --label '<label>'")
         sys.exit(2)
 
     nodes = dict()
-    nodes["93:94:07:73:96:1e"] = Node(nodeID="93:94:07:73:96:1e", x=2, y=0)
-    nodes["63:c3:af:19:3d:a0"] = Node(nodeID="63:c3:af:19:3d:a0", x=0, y=0)
-    nodes["88:eb:88:71:90:e8"] = Node(nodeID="88:eb:88:71:90:e8", x=0, y=2)
+    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=2, y=0)
+    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=0, y=0)
+    nodes["b0:44:d6:f0:48:65"] = Node(nodeID="88:eb:88:71:90:e8", x=0, y=2)
 
     tags = dict()
 
@@ -91,6 +88,8 @@ def main(argv):
         fig = plt.figure()
         ax = fig.add_subplot(111)
         plt.axis([-3, 10, -3, 10])
+
+        ax.set_aspect(1)
         ax.grid(color='#cccccc', linestyle='-', linewidth=1)
 
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
@@ -140,7 +139,7 @@ def main(argv):
                     nodes[nodeID].tags[address].filteredRssi = filteredRssi
 
                     # Log-distance path loss model
-                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-40.0, d0=1.0, n=2.6, xo=1.1), ndigits=2)
+                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-40.0, d0=1.0, n=2.6, Xo=0.0), ndigits=2)
 
                     print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID].tags[address].filteredRssi, "\tDistance: ", nodes[nodeID].tags[address].distance)
 
@@ -148,10 +147,10 @@ def main(argv):
                     totalCounter += 1
 
                     if DB_ENABLED:
-                        sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, distance, crc, lpe, syncController, label)
+                        sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
 
-                    cursor.execute(sql)
-                    db.commit()
+                        cursor.execute(sql)
+                        db.commit()
                 
                 if totalCounter > 0 and totalCounter % 20 == 0:
                     ax.cla()
@@ -170,8 +169,9 @@ def main(argv):
                         for _, node in nodes.items():
                             x = node.position.x
                             y = node.position.y
+                            z = 0
                             radius = node.tags[tagAddress].distance
-                            positions.append((x, y, radius))
+                            positions.append((x, y, z, radius))
 
 
                             circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
