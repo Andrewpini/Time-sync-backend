@@ -147,9 +147,9 @@ def main(argv):
 
         except KeyboardInterrupt:
             print("")
-            print("Standard deviation for channel 37 after ", len(samples["channel_37"]), " samples: ", np.std(samples["channel_37"], ddof=1))
-            print("Standard deviation for channel 38 after ", len(samples["channel_38"]), " samples: ", np.std(samples["channel_38"], ddof=1))
-            print("Standard deviation for channel 39 after ", len(samples["channel_39"]), " samples: ", np.std(samples["channel_39"], ddof=1))
+            print("Average for channel 37 after ", len(samples["channel_37"]), " samples: ", np.average(samples["channel_37"]), "Standard deviation",  np.std(samples["channel_37"], ddof=1,))
+            print("Average for channel 38 after ", len(samples["channel_38"]), " samples: ", np.average(samples["channel_38"]), "Standard deviation",  np.std(samples["channel_38"], ddof=1,))
+            print("Average for channel 39 after ", len(samples["channel_39"]), " samples: ", np.average(samples["channel_39"]), "Standard deviation",  np.std(samples["channel_39"], ddof=1,))
             print("")
             print("Shutting down...")
             interval.stop()
