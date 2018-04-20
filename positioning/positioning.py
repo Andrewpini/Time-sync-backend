@@ -2,9 +2,10 @@ import numpy as np
 from filterpy.kalman import KalmanFilter
 
 class Position:
-    def __init__(self, x, y):
+    def __init__(self, x, y, z):
         self.x = x
         self.y = y
+        self.z = z
 
 class Tag:
     def __init__(self, address="", currentCounter=0, currentCounterAdvCount=0):
@@ -32,7 +33,7 @@ class Tag:
         self.kalman.Q = Q
 
 class Node:
-    def __init__(self, nodeID, x=0, y=0):
+    def __init__(self, nodeID, x=0, y=0, z=0):
         self.nodeID = nodeID
-        self.position = Position(x, y)
+        self.position = Position(x, y, z)
         self.tags = dict()

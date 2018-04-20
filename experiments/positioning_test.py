@@ -169,7 +169,7 @@ def main(argv):
                         for _, node in nodes.items():
                             x = node.position.x
                             y = node.position.y
-                            z = 0
+                            z = node.position.z
                             radius = node.tags[tagAddress].distance
                             positions.append((x, y, z, radius))
 
