@@ -2,6 +2,7 @@ import sys, getopt
 import socket
 import json
 import pymysql
+import jsonpickle
 sys.path.insert(0,'..')
 from calc import distance
 from utils import Interval
@@ -9,10 +10,10 @@ import numpy as np
 from positioning.positioning import Tag, Node, Position
 from calc import multilateration as multi
 from calc import distance
-
-
+from utils import setup
 
 DB_ENABLED = False
+DB_TABLE = "position_testing"
 GRAPH_ENABLED = True
 SAMPLES_FOR_EACH_UPDATE = 20
 NUMBER_OF_NODES_TO_USE = 8
@@ -48,8 +49,9 @@ def main(argv):
     label = None
     totalCounter = 0
     allPositions = list()
+    setupEnable = False
 
-    opts, args = getopt.getopt(argv,"cdfghil:o",["channel=", "database=", "filter=", "graph=", "ip=", "label="])
+    opts, args = getopt.getopt(argv,"cdfghils:o",["channel=", "database=", "filter=", "graph=", "ip=", "label=", "setup="])
     del(args)
 
     if len(opts) == 0:
@@ -69,6 +71,11 @@ def main(argv):
             GRAPH_ENABLED = True
         elif opt in ("-d", "--database"):
             DB_ENABLED = True
+        elif opt in ("-s", "--setup"):
+            if str(arg) == "true":
+                setupEnable = True
+            else :
+                setupEnable = False
         else:
             print("A label must be set for the test to start: filter_test.py --label '<label>'")
             sys.exit(2)
@@ -76,7 +83,7 @@ def main(argv):
     if not label:
         print("A label must be set for the test to start: filter_test.py --label '<label>'")
         sys.exit(2)
-
+    '''
     nodes = dict()
     nodes["b0:cf:4e:01:80:c1"] = Node(nodeID="b0:cf:4e:01:80:c1", x=3.27, y=3.46, z=0)
     nodes["b0:79:35:85:23:cd"] = Node(nodeID="b0:79:35:85:23:cd", x=1.16, y=7.95, z=0)
@@ -86,10 +93,24 @@ def main(argv):
     nodes["b0:44:d6:f0:48:65"] = Node(nodeID="b0:44:d6:f0:48:65", x=3.27, y=5.75, z=0)
     nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=3.85, y=1.34, z=0)
     nodes["b0:46:26:d6:60:14"] = Node(nodeID="b0:46:26:d6:60:14", x=1.53, y=1.27, z=0)
+    '''
+   
+    interval = Interval.Interval(2, sendServerInfo, args=[ip,])
+    print("Starting positioning test... Press CTRL + C to stop.")
+    interval.start() 
 
+    if setupEnable:
+        setupConfig = dict()
+        setupConfig["listenSocket"] = listenSocket
+        setupConfig["broadcastSocket"] = broadcastSocket
+
+        nodes = setup.setupNodes(setupConfig, fromFile=False) 
+    else:
+        nodes = setup.setupNodes(None, fromFile=True) 
+
+        
     tags = dict()
 
- 
     if GRAPH_ENABLED:
         import matplotlib.pyplot as plt
         plt.ion()
@@ -100,14 +121,13 @@ def main(argv):
         ax.set_aspect(1)
         ax.grid(color='#cccccc', linestyle='-', linewidth=1)
 
-    interval = Interval.Interval(2, sendServerInfo, args=[ip,])
-    print("Starting positioning test... Press CTRL + C to stop.")
-    interval.start() 
-
     while True:
         try:
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
+
+            if not "nodeID" in data:
+                continue
 
             ip = addr[0]
             nodeID = data['nodeID']
@@ -155,7 +175,7 @@ def main(argv):
                     totalCounter += 1
 
                     if DB_ENABLED:
-                        sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
+                        sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
 
                         cursor.execute(sql)
                         db.commit()
@@ -185,15 +205,16 @@ def main(argv):
                             if GRAPH_ENABLED:
                                 circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
                                 center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
+                                
                                 ax.add_patch(circle)
                                 ax.add_patch(center)
                         
                         if len(positions) >= NUMBER_OF_NODES_TO_USE:
                             sortedPositions = sorted(positions, key=lambda x: x[3])
-                            position = multi.multilateration(sortedPositions[:NUMBER_OF_NODES_TO_USE], dimensions=3)
-                            allPositions.append(position)
-                            tags[tagAddress] = position
-                            print(position)
+                            estimatedPosition = multi.multilateration(sortedPositions[:NUMBER_OF_NODES_TO_USE], dimensions=3)
+                            allPositions.append(estimatedPosition)
+                            tags[tagAddress] = estimatedPosition
+                            print(estimatedPosition)
                         
                             if GRAPH_ENABLED:
                                 positionIndicator = plt.Circle(tags[tagAddress], radius=0.20, color="b", alpha=1)
