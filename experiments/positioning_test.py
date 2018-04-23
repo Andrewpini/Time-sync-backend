@@ -11,11 +11,11 @@ from calc import multilateration as multi
 from calc import distance
 
 
+
 DB_ENABLED = False
 GRAPH_ENABLED = True
-PLOT_TIME = True
-PLOT_DISTANCE = False
 SAMPLES_FOR_EACH_UPDATE = 20
+NUMBER_OF_NODES_TO_USE = 8
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -47,8 +47,9 @@ def main(argv):
     global DB_ENABLED
     label = None
     totalCounter = 0
+    allPositions = list()
 
-    opts, args = getopt.getopt(argv,"cdfghil:o",["channel=", "distance=", "filter=", "graph=", "ip=", "label="])
+    opts, args = getopt.getopt(argv,"cdfghil:o",["channel=", "database=", "filter=", "graph=", "ip=", "label="])
     del(args)
 
     if len(opts) == 0:
@@ -66,6 +67,8 @@ def main(argv):
             print("Label for test: ", label)
         elif opt in ("-g", "--graph"):
             GRAPH_ENABLED = True
+        elif opt in ("-d", "--database"):
+            DB_ENABLED = True
         else:
             print("A label must be set for the test to start: filter_test.py --label '<label>'")
             sys.exit(2)
@@ -75,14 +78,14 @@ def main(argv):
         sys.exit(2)
 
     nodes = dict()
-    nodes["b0:cf:4e:01:80:c1"] = Node(nodeID="b0:cf:4e:01:80:c1", x=1.53, y=1.27, z=0)
-    nodes["b0:79:35:85:23:cd"] = Node(nodeID="b0:79:35:85:23:cd", x=3.85, y=1.34, z=0)
+    nodes["b0:cf:4e:01:80:c1"] = Node(nodeID="b0:cf:4e:01:80:c1", x=3.27, y=3.46, z=0)
+    nodes["b0:79:35:85:23:cd"] = Node(nodeID="b0:79:35:85:23:cd", x=1.16, y=7.95, z=0)
     nodes["b0:b8:11:7d:73:91"] = Node(nodeID="b0:b8:11:7d:73:91", x=1.16, y=3.46, z=0)
-    nodes["b0:eb:88:71:90:e8"] = Node(nodeID="b0:eb:88:71:90:e8", x=3.27, y=3.46, z=0)
-    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=1.16, y=5.87, z=0)
+    nodes["b0:eb:88:71:90:e8"] = Node(nodeID="b0:eb:88:71:90:e8", x=1.16, y=5.87, z=0)
+    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=0, y=6.97, z=0)
     nodes["b0:44:d6:f0:48:65"] = Node(nodeID="b0:44:d6:f0:48:65", x=3.27, y=5.75, z=0)
-    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=0, y=6.97, z=0)
-    nodes["b0:46:26:d6:60:14"] = Node(nodeID="b0:46:26:d6:60:14", x=1.16, y=7.95, z=0)
+    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=3.85, y=1.34, z=0)
+    nodes["b0:46:26:d6:60:14"] = Node(nodeID="b0:46:26:d6:60:14", x=1.53, y=1.27, z=0)
 
     tags = dict()
 
@@ -185,8 +188,10 @@ def main(argv):
                                 ax.add_patch(circle)
                                 ax.add_patch(center)
                         
-                        if len(positions) > 4:
-                            position = multi.multilateration(positions)
+                        if len(positions) >= NUMBER_OF_NODES_TO_USE:
+                            sortedPositions = sorted(positions, key=lambda x: x[3])
+                            position = multi.multilateration(sortedPositions[:NUMBER_OF_NODES_TO_USE], dimensions=3)
+                            allPositions.append(position)
                             tags[tagAddress] = position
                             print(position)
                         
@@ -200,6 +205,31 @@ def main(argv):
         except KeyboardInterrupt:
             print("Shutting down interval...")
             interval.stop()
+            if GRAPH_ENABLED:
+
+                ax.cla()
+                ax.set_xlim((-5, 10))
+                ax.set_ylim((-5, 15))
+                plt.grid()
+                for _, node in nodes.items():
+                    x = node.position.x
+                    y = node.position.y
+                    z = node.position.z
+                    center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
+                    ax.add_patch(center)
+
+                x = list()
+                y = list()
+                
+                for position in allPositions:
+                    x.append(position[0])
+                    y.append(position[1])
+
+                    plt.plot(x, y, '-', color='b', alpha=0.1)
+
+                plt.draw()
+                plt.pause(0.0001)
+                input("Press enter to exit")
             break
 
 if __name__ == "__main__":
