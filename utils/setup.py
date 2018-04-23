@@ -39,7 +39,11 @@ def cmdAllLedsOn(enable=True):
     if enable:
         cmd = "CONTROL_COMMAND:(\x00"
     else:
-        cmd = "CONTROL_COMMAND:)\00"
+        cmd = "CONTROL_COMMAND:)\x00"
+    sendMessage(cmd)
+
+def cmdAllLedsDefault():
+    cmd = "CONTROL_COMMAND:\x2a"
     sendMessage(cmd)
 
 def cmdSingleLedOn(ip, enable=True):
@@ -85,80 +89,72 @@ def setupNodes(config, fromFile=False, verbose=False):
     global listenSocket
     global broadcastSocket
     nodes = dict()
-    retNodes = dict()
-    time.sleep(1)
 
-    if fromFile:
-        file = open("config.txt", "r")
-        retNodes = jsonpickle.decode(file.read())
-        file.close()
-        #for key, node in nodes:
-        #    nodes[key] 
-    else:
-        listenSocket = config["listenSocket"]
-        broadcastSocket = config["broadcastSocket"]
+    try:
+        if fromFile:
+            file = open("config.txt", "r")
+            nodes = jsonpickle.decode(file.read())
+            file.close()
+        else:
+            listenSocket = config["listenSocket"]
+            broadcastSocket = config["broadcastSocket"]
 
-        cmdAllLedsOn(enable=True)
-        cmdWhoAmI(start=True)
+            cmdAllLedsOn(enable=True)
+            cmdWhoAmI(start=True)
 
-        endTime = time.time() + TIME_TO_WAIT
+            endTime = time.time() + TIME_TO_WAIT
 
-        print("Starting setup process, please wait...")
+            print("Starting setup process, please wait...")
 
-        while time.time() < endTime:
-            try:
-                rawData, _ = listenSocket.recvfrom(1024)
-                data = json.loads(rawData)
+            while time.time() < endTime:
+                try:
+                    rawData, _ = listenSocket.recvfrom(1024)
+                    data = json.loads(rawData)
 
-                if "MAC" in data:
-                    mac = data["MAC"]
-                    ip = data["IP"]
+                    if "MAC" in data:
+                        mac = data["MAC"]
+                        ip = data["IP"]
 
-                    if verbose:
-                        print("WHO AM I message from MAC", mac, ", IP is ", ip)
-                    if mac not in nodes:
-                        nodes[mac] = dict()
-                        nodes[mac]["MAC"] = mac
-                        nodes[mac]["IP"] = ip
-                    continue
-            except KeyboardInterrupt:
-                break
-        
-        cmdAllLedsOn(enable=False)
-        cmdWhoAmI(start=False)
+                        if verbose:
+                            print("WHO AM I message from MAC", mac, ", IP is ", ip)
+                        if mac not in nodes:
+                            nodes[mac] = Node(nodeID=mac, ip=ip)
+                except KeyboardInterrupt:
+                    break
+            
+            cmdAllLedsOn(enable=False)
+            cmdWhoAmI(start=False)
 
-        print(f"\n\nAvailable nodes (%d):" % len(nodes))
-        for _, node in nodes.items():
-            print("\tMAC: ", node["MAC"], "\tIP: ", node["IP"])
+            print(f"\n\nAvailable nodes (%d):" % len(nodes))
+            for _, node in nodes.items():
+                print("\tMAC: ", node.nodeID, "\tIP: ", node.ip)
 
+            for key, node in nodes.items():
+                cmdSingleLedOn(node.ip, enable=True)
+                print("")
+                print(f"Currently configuring node with MAC address %s and IP address %s" % (node.nodeID, node.ip))
+                print("Only this node's high-power LED is currently on, please provide its position below:\n")
+                nodes[key].position.x = input("\tNode's x-coordinate:\t")
+                nodes[key].position.y = input("\tNode's y-coordinate:\t")
+                nodes[key].position.z = input("\tNode's z-coordinate:\t")
+                print("\n")
 
-        for key, node in nodes.items():
-            cmdSingleLedOn(node["IP"], enable=True)
-            print("")
-            print(f"Currently configuring node with MAC address %s and IP address %s" % (node["MAC"], node["IP"]))
-            print("Only this node's high-power LED is currently on, please provide its position below:\n")
-            x = input("\tNode's x-coordinate:\t")
-            y = input("\tNode's y-coordinate:\t")
-            z = input("\tNode's z-coordinate:\t")
-            print("\n")
+                cmdSingleLedOn(node.ip, enable=False)
 
-            nodes[key]["x"] = x
-            nodes[key]["y"] = y
-            nodes[key]["z"] = z
+            print("\n\nNode overview:")
+            for _, node in nodes.items():
+                print("\tMAC: ", node.nodeID, "\tIP: ", node.ip, "\t\tx: ", round(node.position.x, 2), "\ty: ", round(node.position.y, 2), "\tz: ", round(node.position.z), 2)
 
-            cmdSingleLedOn(node["IP"], enable=False)
+            file = open("config.txt", "w") 
+            file.write(jsonpickle.encode(nodes))
+            file.close()
 
-            retNodes[node["MAC"]] = Node(nodeID=node["MAC"], ip=ip, x=x, y=y, z=z)
+        cmdAllLedsDefault()
 
-        print("\n\nNode overview:")
-        for _, node in retNodes.items():
-            print("\tMAC: ", node.nodeID, "\tIP: ", node.ip, "\t\tx: ", node.position.x, "\ty: ", node.position.y, "\tz: ", node.position.z)
+        return nodes
 
-        file = open("config.txt", "w") 
-        file.write(jsonpickle.encode(retNodes))
-        file.close()
-    
-    return retNodes
+    except KeyboardInterrupt:
+        sys.exit()
     
 
 if __name__ == "__main__":
