@@ -17,6 +17,8 @@ DB_TABLE = "position_testing"
 GRAPH_ENABLED = True
 SAMPLES_FOR_EACH_UPDATE = 20
 NUMBER_OF_NODES_TO_USE = 8
+POSITION_DIMENSIONS = 3
+LOG_DISTANCE_ST_DEV = 2.0
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -140,88 +142,88 @@ def main(argv):
             syncController = data['syncController']
             channel = data['channel']
 
-            if crc == 1 and lpe == 0:
-                if nodeID not in nodes: 
-                    nodes[nodeID] = Node(nodeID)
+            if crc == 0 or lpe == 1:
+                continue
+
+            if nodeID not in nodes: 
+                continue
+            
+            if address not in nodes[nodeID].tags: 
+                nodes[nodeID].tags[address] = Tag(address)
+                nodes[nodeID].tags[address].currentCounter = counter
+                nodes[nodeID].tags[address].currentCounterAdvCount  = 0
+                if address not in tags:
+                    tags[address] = (1, 1, 1)
+
+            nodes[nodeID].tags[address].rssi.append(rssi) 
+            if nodes[nodeID].tags[address].currentCounter == counter:
+                nodes[nodeID].tags[address].currentCounterAdvCount += 1
+                if DB_ENABLED:
+                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, 0, crc, lpe, syncController, label)
+            else:
+                nodes[nodeID].tags[address].currentCounter = counter
+                nodes[nodeID].tags[address].currentCounterAdvCount = 1
+
+                selectedChannelRssi = max(nodes[nodeID].tags[address].rssi)
+
+                nodes[nodeID].tags[address].kalman.predict()
+                nodes[nodeID].tags[address].kalman.update(selectedChannelRssi)
+                filteredRssi = nodes[nodeID].tags[address].kalman.x[0]
+                nodes[nodeID].tags[address].filteredRssi = filteredRssi   
+                nodes[nodeID].tags[address].rssi = list()         
+            
+                if DB_ENABLED:
+                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
+
+            if DB_ENABLED:
+                cursor.execute(sql)
+                db.commit()
+            
+            if totalCounter > 0 and totalCounter % 24 == 0:
+                totalCounter += 1
+                if GRAPH_ENABLED:
+                    ax.cla()
+                    ax.set_xlim((-5, 10))
+                    ax.set_ylim((-5, 15))
+                    plt.grid()
                 
-                if address not in nodes[nodeID].tags: 
-                    nodes[nodeID].tags[address] = Tag(address)
-                    nodes[nodeID].tags[address].currentCounter = counter
-                    nodes[nodeID].tags[address].currentCounterAdvCount  = 0
-                    if address not in tags:
-                        tags[address] = 1
+                for tagAddress in tags:
+                    positions = list()
+                    color = 'k'
 
-                if nodes[nodeID].tags[address].currentCounter == counter:
-                    nodes[nodeID].tags[address].currentCounterAdvCount += 1
-                else:
-                    nodes[nodeID].tags[address].currentCounter = counter
-                    nodes[nodeID].tags[address].currentCounterAdvCount = 1
-                
-                if nodes[nodeID].tags[address].currentCounterAdvCount == 3:
-                    nodes[nodeID].tags[address].rssi.append(rssi) 
-                    selectedChannelRssi = max(nodes[nodeID].tags[address].rssi)
+                    for _, node in nodes.items():
+                        x = node.position.x
+                        y = node.position.y
+                        z = node.position.z
+                                       
+                        # Log-distance path loss model      
+                        node.tags[tagAddress].distance = round(distance.logDistancePathLoss(node.tags[tagAddress].filteredRssi, rssi_d0=-38.0, d0=1.0, n=2.6, stDev=LOG_DISTANCE_ST_DEV), 2)
 
-                    nodes[nodeID].tags[address].kalman.predict()
-                    nodes[nodeID].tags[address].kalman.update(selectedChannelRssi)
-                    filteredRssi = nodes[nodeID].tags[address].kalman.x[0]
-                    nodes[nodeID].tags[address].filteredRssi = filteredRssi
+                        radius = node.tags[tagAddress].distance
+                        positions.append((x, y, z, radius))
 
-                    # Log-distance path loss model
-                    nodes[nodeID].tags[address].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-38.0, d0=1.0, n=2.6, Xo=0.0), ndigits=2)
-
-                    #print("node ID: ", nodeID, "\tIP: ", ip, "\tAddress: ", address, "\tFiltered RSSI: ", nodes[nodeID].tags[address].filteredRssi, "\tDistance: ", nodes[nodeID].tags[address].distance)
-
-                    nodes[nodeID].tags[address].rssi = list()
-                    totalCounter += 1
-
-                    if DB_ENABLED:
-                        sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
-
-                        cursor.execute(sql)
-                        db.commit()
-                
-                if totalCounter > 0 and totalCounter % 20 == 0:
-                    if GRAPH_ENABLED:
-                        ax.cla()
-                        ax.set_xlim((-5, 10))
-                        ax.set_ylim((-5, 15))
-                        plt.grid()
-                    color = "b"
+                        if GRAPH_ENABLED:
+                            circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
+                            center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
+                            
+                            ax.add_patch(circle)
+                            ax.add_patch(center)
                     
-                    for tagAddress in tags:
-                        positions = list()
-                        if color == "b":
-                            color = "k"
-                        else:
-                            color = "b"
+                    if len(positions) >= NUMBER_OF_NODES_TO_USE:
+                        sortedPositions = sorted(positions, key=lambda x: x[3])
+                        estimatedPosition = multi.multilateration(sortedPositions[:NUMBER_OF_NODES_TO_USE], dimensions=POSITION_DIMENSIONS)
+                        allPositions.append(estimatedPosition)
+                        tags[tagAddress] = estimatedPosition
 
-                        for _, node in nodes.items():
-                            x = node.position.x
-                            y = node.position.y
-                            z = node.position.z
-                            radius = node.tags[tagAddress].distance
-                            positions.append((x, y, z, radius))
+                        print(estimatedPosition)
+                    
+                        if GRAPH_ENABLED:
+                            positionIndicator = plt.Circle(estimatedPosition, radius=0.20, color="b", alpha=1)
+                            ax.add_patch(positionIndicator)
 
-                            if GRAPH_ENABLED:
-                                circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
-                                center = plt.Circle((x, y), radius=0.1, color='r', alpha=1)
-                                
-                                ax.add_patch(circle)
-                                ax.add_patch(center)
-                        
-                        if len(positions) >= NUMBER_OF_NODES_TO_USE:
-                            sortedPositions = sorted(positions, key=lambda x: x[3])
-                            estimatedPosition = multi.multilateration(sortedPositions[:NUMBER_OF_NODES_TO_USE], dimensions=3)
-                            allPositions.append(estimatedPosition)
-                            tags[tagAddress] = estimatedPosition
-                            print(estimatedPosition)
-                        
-                            if GRAPH_ENABLED:
-                                positionIndicator = plt.Circle(tags[tagAddress], radius=0.20, color="b", alpha=1)
-                                ax.add_patch(positionIndicator)
-                    if GRAPH_ENABLED:
-                        plt.draw()
-                        plt.pause(0.0001)
+                if GRAPH_ENABLED:
+                    plt.draw()
+                    plt.pause(0.0001)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
