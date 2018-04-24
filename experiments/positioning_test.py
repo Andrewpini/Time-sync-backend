@@ -107,9 +107,9 @@ def main(argv):
         setupConfig["broadcastSocket"] = broadcastSocket
 
         nodes = setup.setupNodes(setupConfig, fromFile=False) 
+        print(nodes)
     else:
         nodes = setup.setupNodes(None, fromFile=True) 
-
         
     tags = dict()
 
@@ -173,14 +173,13 @@ def main(argv):
                 nodes[nodeID].tags[address].rssi = list()         
             
                 if DB_ENABLED:
-                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
+                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
 
             if DB_ENABLED:
                 cursor.execute(sql)
                 db.commit()
             
             if totalCounter > 0 and totalCounter % 24 == 0:
-                totalCounter += 1
                 if GRAPH_ENABLED:
                     ax.cla()
                     ax.set_xlim((-5, 10))
@@ -224,6 +223,8 @@ def main(argv):
                 if GRAPH_ENABLED:
                     plt.draw()
                     plt.pause(0.0001)
+            
+            totalCounter += 1
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
