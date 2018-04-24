@@ -134,26 +134,29 @@ def setupNodes(config, fromFile=False, verbose=False):
                 print("")
                 print(f"Currently configuring node with MAC address %s and IP address %s" % (node.nodeID, node.ip))
                 print("Only this node's high-power LED is currently on, please provide its position below:\n")
-                nodes[key].position.x = input("\tNode's x-coordinate:\t")
-                nodes[key].position.y = input("\tNode's y-coordinate:\t")
-                nodes[key].position.z = input("\tNode's z-coordinate:\t")
+                nodes[key].position.x = float(input("\tNode's x-coordinate:\t"))
+                nodes[key].position.y = float(input("\tNode's y-coordinate:\t"))
+                nodes[key].position.z = float(input("\tNode's z-coordinate:\t"))
                 print("\n")
 
                 cmdSingleLedOn(node.ip, enable=False)
+            
+            file = open("config.txt", "w") 
+            file.write(jsonpickle.encode(nodes))
+            file.close()
 
             print("\n\nNode overview:")
             for _, node in nodes.items():
                 print("\tMAC: ", node.nodeID, "\tIP: ", node.ip, "\t\tx: ", round(node.position.x, 2), "\ty: ", round(node.position.y, 2), "\tz: ", round(node.position.z), 2)
 
-            file = open("config.txt", "w") 
-            file.write(jsonpickle.encode(nodes))
-            file.close()
+            print("\nSetup completed\n")
 
-        cmdAllLedsDefault()
+            cmdAllLedsDefault()
 
         return nodes
 
     except KeyboardInterrupt:
+        cmdAllLedsDefault()
         sys.exit()
     
 
