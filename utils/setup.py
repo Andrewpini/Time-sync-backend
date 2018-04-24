@@ -85,14 +85,14 @@ def main(argv):
     #setupNodes()
 
 
-def setupNodes(config, fromFile=False, verbose=False):
+def setupNodes(config, fromFile=False, verbose=False, fileName=""):
     global listenSocket
     global broadcastSocket
     nodes = dict()
 
     try:
         if fromFile:
-            file = open("config.txt", "r")
+            file = open(fileName, "r")
             nodes = jsonpickle.decode(file.read())
             file.close()
         else:

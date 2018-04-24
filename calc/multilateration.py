@@ -45,5 +45,6 @@ def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3):
         circ = plt.Circle(plsq[0], radius=0.15, color='r', alpha=1)
         ax.add_patch(circ)
         plt.show()
+
     
-    return plsq[0]
+    return (round(plsq[0][0], 2), round(plsq[0][1], 2), round(plsq[0][2], 2))

@@ -33,8 +33,15 @@ class Tag:
         self.kalman.Q = Q
 
 class Node:
-    def __init__(self, nodeID, ip='', x=0, y=0, z=0):
+    def __init__(self, nodeID, ip='', x=0, y=0, z=0, active=False):
         self.nodeID = nodeID
         self.position = Position(x, y, z)
         self.tags = dict()
         self.ip = ip
+        self.active = active
+
+    def setActiveStatus(self, value):
+        self.active = value
+
+    def getActiveStatus(self):
+        return self.active

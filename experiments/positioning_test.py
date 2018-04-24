@@ -18,7 +18,7 @@ GRAPH_ENABLED = True
 SAMPLES_FOR_EACH_UPDATE = 20
 NUMBER_OF_NODES_TO_USE = 8
 POSITION_DIMENSIONS = 3
-LOG_DISTANCE_ST_DEV = 2.0
+LOG_DISTANCE_ST_DEV = 0.1
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -52,8 +52,9 @@ def main(argv):
     totalCounter = 0
     allPositions = list()
     setupEnable = False
+    truePosition = Position(0, 0, 0)
 
-    opts, args = getopt.getopt(argv,"cdfghils:o",["channel=", "database=", "filter=", "graph=", "ip=", "label=", "setup="])
+    opts, args = getopt.getopt(argv,"cdfghilsxyz:o",["channel=", "database=", "filter=", "graph=", "ip=", "label=", "setup=", "x=", "y=", "z="])
     del(args)
 
     if len(opts) == 0:
@@ -77,25 +78,25 @@ def main(argv):
             if str(arg) == "true":
                 setupEnable = True
             else :
-                setupEnable = False
+                configFile = str(arg)
+        elif opt in ("-x", "--x"):
+            print("x: ", arg)
+            truePosition.x = float(arg)
+        elif opt in ("-y", "--y"):
+            truePosition.y = float(arg)
+        elif opt in ("-z", "--z"):
+            truePosition.z = float(arg)
         else:
             print("A label must be set for the test to start: filter_test.py --label '<label>'")
             sys.exit(2)
-
+    if truePosition.x == 0 and truePosition.y == 0 and truePosition.z == 0:
+        truePosition = "NULL"
+    else:
+        truePosition = (truePosition.x, truePosition.y, truePosition.z)
+        print(truePosition)
     if not label:
         print("A label must be set for the test to start: filter_test.py --label '<label>'")
         sys.exit(2)
-    '''
-    nodes = dict()
-    nodes["b0:cf:4e:01:80:c1"] = Node(nodeID="b0:cf:4e:01:80:c1", x=3.27, y=3.46, z=0)
-    nodes["b0:79:35:85:23:cd"] = Node(nodeID="b0:79:35:85:23:cd", x=1.16, y=7.95, z=0)
-    nodes["b0:b8:11:7d:73:91"] = Node(nodeID="b0:b8:11:7d:73:91", x=1.16, y=3.46, z=0)
-    nodes["b0:eb:88:71:90:e8"] = Node(nodeID="b0:eb:88:71:90:e8", x=1.16, y=5.87, z=0)
-    nodes["b0:94:07:73:96:1e"] = Node(nodeID="b0:94:07:73:96:1e", x=0, y=6.97, z=0)
-    nodes["b0:44:d6:f0:48:65"] = Node(nodeID="b0:44:d6:f0:48:65", x=3.27, y=5.75, z=0)
-    nodes["b0:c3:af:19:3d:a0"] = Node(nodeID="b0:c3:af:19:3d:a0", x=3.85, y=1.34, z=0)
-    nodes["b0:46:26:d6:60:14"] = Node(nodeID="b0:46:26:d6:60:14", x=1.53, y=1.27, z=0)
-    '''
    
     interval = Interval.Interval(2, sendServerInfo, args=[ip,])
     print("Starting positioning test... Press CTRL + C to stop.")
@@ -109,7 +110,7 @@ def main(argv):
         nodes = setup.setupNodes(setupConfig, fromFile=False) 
         print(nodes)
     else:
-        nodes = setup.setupNodes(None, fromFile=True) 
+        nodes = setup.setupNodes(None, fromFile=True, fileName=configFile)
         
     tags = dict()
 
@@ -123,8 +124,13 @@ def main(argv):
         ax.set_aspect(1)
         ax.grid(color='#cccccc', linestyle='-', linewidth=1)
 
+        for _, node in nodes.items():
+            node.setActiveStatus(False)
+
+
     while True:
         try:
+            sql = ''
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
 
@@ -156,10 +162,12 @@ def main(argv):
                     tags[address] = (1, 1, 1)
 
             nodes[nodeID].tags[address].rssi.append(rssi) 
+            nodes[nodeID].setActiveStatus(True)
+            nodePosition = (nodes[nodeID].position.x, nodes[nodeID].position.y, nodes[nodeID].position.z)
             if nodes[nodeID].tags[address].currentCounter == counter:
                 nodes[nodeID].tags[address].currentCounterAdvCount += 1
                 if DB_ENABLED:
-                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp , address, channel, counter, rssi, 0, crc, lpe, syncController, label)
+                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
             else:
                 nodes[nodeID].tags[address].currentCounter = counter
                 nodes[nodeID].tags[address].currentCounterAdvCount = 1
@@ -173,11 +181,7 @@ def main(argv):
                 nodes[nodeID].tags[address].rssi = list()         
             
                 if DB_ENABLED:
-                    sql = "INSERT INTO %s VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s')" % (DB_TABLE, nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label)
-
-            if DB_ENABLED:
-                cursor.execute(sql)
-                db.commit()
+                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
             
             if totalCounter > 0 and totalCounter % 24 == 0:
                 if GRAPH_ENABLED:
@@ -191,6 +195,8 @@ def main(argv):
                     color = 'k'
 
                     for _, node in nodes.items():
+                        if node.getActiveStatus() == False:
+                            continue
                         x = node.position.x
                         y = node.position.y
                         z = node.position.z
@@ -200,6 +206,8 @@ def main(argv):
 
                         radius = node.tags[tagAddress].distance
                         positions.append((x, y, z, radius))
+                        if DB_ENABLED:
+                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
 
                         if GRAPH_ENABLED:
                             circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
@@ -214,16 +222,29 @@ def main(argv):
                         allPositions.append(estimatedPosition)
                         tags[tagAddress] = estimatedPosition
 
-                        print(estimatedPosition)
+                        error_3d = np.sqrt(np.square(estimatedPosition[0] - truePosition[0]) + np.square(estimatedPosition[1] - truePosition[1]) + np.square(estimatedPosition[2] - truePosition[2]))
+                        
+                        error_2d = np.sqrt(np.square(estimatedPosition[0] - truePosition[0]) + np.square(estimatedPosition[1] - truePosition[1]))
+
+                        if DB_ENABLED:
+                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', '%s', '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, estimatedPosition, truePosition, nodePosition)
+
+
+                        print("x: ", round(estimatedPosition[0], 2), "\ty: ", round(estimatedPosition[1], 2), "\tz: ", round(estimatedPosition[2], 2), "\t Error 3D: ", round(error_3d, 2), "\tError 2D: ", round(error_2d, 2))
                     
                         if GRAPH_ENABLED:
                             positionIndicator = plt.Circle(estimatedPosition, radius=0.20, color="b", alpha=1)
                             ax.add_patch(positionIndicator)
+                            truePositionIndicator = plt.Circle(truePosition, radius=0.20, color="g", alpha=1)
+                            ax.add_patch(truePositionIndicator)
 
                 if GRAPH_ENABLED:
                     plt.draw()
                     plt.pause(0.0001)
             
+            if DB_ENABLED:
+                cursor.execute(sql)
+                db.commit()
             totalCounter += 1
 
         except KeyboardInterrupt:
@@ -245,7 +266,7 @@ def main(argv):
                 x = list()
                 y = list()
                 
-                for position in allPositions:
+                for position in allPositions[30:]:
                     x.append(position[0])
                     y.append(position[1])
 
