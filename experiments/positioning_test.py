@@ -18,7 +18,12 @@ GRAPH_ENABLED = True
 SAMPLES_FOR_EACH_UPDATE = 20
 NUMBER_OF_NODES_TO_USE = 8
 POSITION_DIMENSIONS = 3
-LOG_DISTANCE_ST_DEV = 0.1
+LOG_DISTANCE_ST_DEV = 0.0
+LOG_DISTANCE_N = 2.6
+LOG_DISTANCE_RSSI_D0 = 39.0
+LOG_DISTANCE_D0 = 1.0
+
+settings = "{ \"numberOfNodes\" : %d, \"dimensions\" : %d, \"logDistanceStdDev\" : %f, \"logDistanceN\" : %d, \"logDistanceRssiD0\" : %f , \"logDistanceD0\" : %f }" % (NUMBER_OF_NODES_TO_USE, POSITION_DIMENSIONS, LOG_DISTANCE_ST_DEV, LOG_DISTANCE_N, LOG_DISTANCE_RSSI_D0, LOG_DISTANCE_D0)
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -167,7 +172,7 @@ def main(argv):
             if nodes[nodeID].tags[address].currentCounter == counter:
                 nodes[nodeID].tags[address].currentCounterAdvCount += 1
                 if DB_ENABLED:
-                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
+                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s', '%s')" % (nodeID, ip, timestamp , address, channel, counter, rssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition, settings)
             else:
                 nodes[nodeID].tags[address].currentCounter = counter
                 nodes[nodeID].tags[address].currentCounterAdvCount = 1
@@ -181,7 +186,7 @@ def main(argv):
                 nodes[nodeID].tags[address].rssi = list()         
             
                 if DB_ENABLED:
-                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
+                    sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition, settings)
             
             if totalCounter > 0 and totalCounter % 24 == 0:
                 if GRAPH_ENABLED:
@@ -202,12 +207,12 @@ def main(argv):
                         z = node.position.z
                                        
                         # Log-distance path loss model      
-                        node.tags[tagAddress].distance = round(distance.logDistancePathLoss(node.tags[tagAddress].filteredRssi, rssi_d0=-38.0, d0=1.0, n=2.6, stDev=LOG_DISTANCE_ST_DEV), 2)
+                        node.tags[tagAddress].distance = round(distance.logDistancePathLoss(node.tags[tagAddress].filteredRssi, rssi_d0=-LOG_DISTANCE_RSSI_D0, d0=LOG_DISTANCE_D0, n=LOG_DISTANCE_N, stDev=LOG_DISTANCE_ST_DEV), 2)
 
                         radius = node.tags[tagAddress].distance
                         positions.append((x, y, z, radius))
                         if DB_ENABLED:
-                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', NULL, '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, truePosition, nodePosition)
+                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', NULL, '%s', '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, truePosition, nodePosition, settings)
 
                         if GRAPH_ENABLED:
                             circle = plt.Circle((x, y), radius=radius, color=color, alpha=0.1)
@@ -226,8 +231,11 @@ def main(argv):
                         
                         error_2d = np.sqrt(np.square(estimatedPosition[0] - truePosition[0]) + np.square(estimatedPosition[1] - truePosition[1]))
 
+                        ax.text(11, 3, ''.join(("Error 2D: ", str(round(error_2d, 2)))))
+                        ax.text(11, 1, ''.join(("Error 3D: ", str(round(error_3d, 2)))))
+
                         if DB_ENABLED:
-                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', '%s', '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, estimatedPosition, truePosition, nodePosition)
+                            sql = "INSERT INTO position_testing VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %f, NULL, %f, %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, filteredRssi, radius, crc, lpe, syncController, label, configFile, estimatedPosition, truePosition, nodePosition, settings)
 
 
                         print("x: ", round(estimatedPosition[0], 2), "\ty: ", round(estimatedPosition[1], 2), "\tz: ", round(estimatedPosition[2], 2), "\t Error 3D: ", round(error_3d, 2), "\tError 2D: ", round(error_2d, 2))
@@ -272,6 +280,8 @@ def main(argv):
 
                     plt.plot(x, y, '-', color='b', alpha=0.1)
 
+                truePositionIndicator = plt.Circle(truePosition, radius=0.20, color="g", alpha=1)
+                ax.add_patch(truePositionIndicator)
                 plt.draw()
                 plt.pause(0.0001)
                 input("Press enter to exit")

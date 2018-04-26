@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
  
 import numpy as np
-from scipy.optimize import leastsq, least_squares
+from scipy.optimize import leastsq, least_squares, minimize
 
 testData = [(0, 0, 2, 5.144), 
             (3, 0, 2, 4.612), 
@@ -20,10 +20,18 @@ def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3):
         if dimensions == 2:
             point[2] = 0
             return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) - p[3]) / np.square(p[3]) for p in data])
+            #return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) / p[3] - 1 for p in data])
         elif dimensions == 3:
-            return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) - p[3]) / np.square(p[3]) for p in data])
-
+            #return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) - p[3]) / np.square(p[3]) for p in data])
+            return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) / p[3] - 1 for p in data])
+    
+    if dimensions == 2:
+        startP = (data[0][0], data[0][1])
+    elif dimensions == 3:
+        startP = (data[0][0], data[0][1], data[0][2])
+        
     plsq = leastsq(residuals, startingPoint, args=(data))
+    #plsq = minimize(residuals, startingPoint, args=(data))
     #plsq = least_squares(residuals, startingPoint, args=(data))
     
     if plotEnabled:
