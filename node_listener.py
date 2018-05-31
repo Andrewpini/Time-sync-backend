@@ -50,11 +50,11 @@ def main(argv):
     counter_39 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
 
     if len(opts) == 0:
-        print("udp_listener.py -i <server IP address>")
+        print("node_listener.py -i <server IP address>")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print("udp_listener.py -i <server IP address>")
+            print("node_listener.py -i <server IP address>")
             sys.exit()
         elif opt in ("-i", "-a", "--ip", "--address"):
             ip = arg
@@ -64,7 +64,7 @@ def main(argv):
         elif opt in ("-g", "--graph"):
             GRAPH_ENABLED = True
         else:
-            print("udp_listener.py -i <server IP address>")
+            print("node_listener.py -i <server IP address>")
             sys.exit(2)
     
     if GRAPH_ENABLED:
