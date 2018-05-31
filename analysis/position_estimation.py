@@ -481,5 +481,3 @@ for _, record in labelsDataSet.iterrows():
     np.savetxt(filename, np.array([settings]), fmt='%s', delimiter=',')
 
 
-
-
