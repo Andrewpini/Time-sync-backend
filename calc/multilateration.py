@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+
  
 import numpy as np
 from scipy.optimize import leastsq, least_squares, minimize
@@ -15,45 +15,18 @@ testData = [(0, 0, 2, 5.144),
     
 p0 = [1, 1, 1.5]
 
-def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3):
-    def residuals(point, data):
+def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3, bounds=([-2, 0, 0], [5, 11, 3])):
+    def residuals(point, *data):
         if dimensions == 2:
             point[2] = 0
-            return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) - p[3]) / np.square(p[3]) for p in data])
-            #return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) / p[3] - 1 for p in data])
+            #return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) - p[3]) / np.square(p[3]) for p in data])
+            return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1])) / p[3] - 1 for p in data])
         elif dimensions == 3:
-            #return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) - p[3]) / np.square(p[3]) for p in data])
-            return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) / p[3] - 1 for p in data])
+            return np.array([np.square(np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) - p[3]) / (p[3])**3 for p in data])
+            #return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) / p[3] - 1 for p in data])
     
-    if dimensions == 2:
-        startP = (data[0][0], data[0][1])
-    elif dimensions == 3:
-        startP = (data[0][0], data[0][1], data[0][2])
-        
-    plsq = leastsq(residuals, startingPoint, args=(data))
-    #plsq = minimize(residuals, startingPoint, args=(data))
-    #plsq = least_squares(residuals, startingPoint, args=(data))
-    
-    if plotEnabled:
-        fig = plt.figure()
-        plt.ion()
-        ax = fig.add_subplot(1, 1, 1)
-        ax.set_xlim((-5, 13))
-        ax.set_ylim((-5, 13))
-        x0,x1 = ax.get_xlim()
-        y0,y1 = ax.get_ylim()
-        ax.set_aspect(abs(x1-x0)/abs(y1-y0))
+    #plsq = leastsq(residuals, startingPoint, args=(data))
+    plsq = least_squares(residuals, startingPoint, args=data, bounds=bounds)
 
-        # Plot section
-        for p in data:
-            circ = plt.Circle((p[0], p[1]), radius=p[3], color='b', alpha=0.1)
-            circ2 = plt.Circle((p[0], p[1]), radius=0.01, color='r', alpha=1)
-            ax.add_patch(circ)
-            ax.add_patch(circ2)
-        
-        circ = plt.Circle(plsq[0], radius=0.15, color='r', alpha=1)
-        ax.add_patch(circ)
-        plt.show()
-
-    
-    return (round(plsq[0][0], 2), round(plsq[0][1], 2), round(plsq[0][2], 2))
+    return (round(plsq['x'][0], 2), round(plsq['x'][1], 2), round(plsq['x'][2], 2))
+    #return (round(plsq[0][0], 2), round(plsq[0][1], 2), round(plsq[0][2], 2))

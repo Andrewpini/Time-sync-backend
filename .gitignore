@@ -2,4 +2,6 @@
 *.pyc
 node_modules
 .vscode
+Data_dump
+
 

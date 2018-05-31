@@ -20,7 +20,7 @@ def bleChannelToFrequency(channel):
 # rssi_d0 is RSSI at distance d0
 # n is the path loss exponent
 # Xo is zero-mean Gaussian distributed random variable with standard deviation to compensate for shadowing effects
-def logDistancePathLoss(rssi, rssi_d0, d0, n, stDev):
+def logDistancePathLoss(rssi, rssi_d0, d0, n, stDev=6.0):
     Xo = np.random.normal(loc=0.0, scale=stDev)
     rhs = -(rssi - rssi_d0 - Xo) / (10 * n)
     distance = d0 * math.pow(10, rhs)
@@ -33,6 +33,10 @@ def calcPathLossExponent(rssi, d, rssi_d0, d0, xo):
 
     return n
 
+def altMethod(rssi, X, n):
+    return math.pow((rssi/X), ((-1)/n))
+    
+
 # ITU's recommended model for indoor environments
 # Basic form: Ltotal = L(d0) + N log(d/d0) + Lf(n) 	[dB], L(d0) = 20 log(f) - 28, f in MHz and d0 = 1m
 # rssi is measured RSSI
@@ -40,7 +44,7 @@ def calcPathLossExponent(rssi, d, rssi_d0, d0, xo):
 # N is the distance power loss, typically 28 for residential building, 30 for office
 # Lf(n) is floor penetration loss factor, = 14 for typical office environment, 10 for typical apartment, 5 for a house
 # n is the number of floors the signal propagates across
-def ituDistance(rssi, f, N, Lf, n):
+def ituDistance(rssi, f, N=30, Lf=14, n=1):
     Lfn = Lf * n 
     Ld0 = 20 * math.log10(f) - 28
     d0 = 1

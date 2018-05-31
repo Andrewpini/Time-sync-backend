@@ -141,7 +141,7 @@ def setupNodes(config, fromFile=False, verbose=False, fileName=""):
 
                 cmdSingleLedOn(node.ip, enable=False)
             
-            file = open("config.txt", "w") 
+            file = open("nodeConfig.txt", "w") 
             file.write(jsonpickle.encode(nodes))
             file.close()
 

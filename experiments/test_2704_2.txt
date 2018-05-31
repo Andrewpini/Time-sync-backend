@@ -2,7 +2,7 @@
   "b0:44:d6:f0:48:65": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.11",
+    "ip": "10.0.0.16",
     "nodeID": "b0:44:d6:f0:48:65",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -15,7 +15,7 @@
   "b0:46:26:d6:60:14": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.12",
+    "ip": "10.0.0.11",
     "nodeID": "b0:46:26:d6:60:14",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -28,7 +28,7 @@
   "b0:79:35:85:23:cd": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.13",
+    "ip": "10.0.0.15",
     "nodeID": "b0:79:35:85:23:cd",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -41,7 +41,7 @@
   "b0:94:07:73:96:1e": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.18",
+    "ip": "10.0.0.14",
     "nodeID": "b0:94:07:73:96:1e",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -54,7 +54,7 @@
   "b0:b8:11:7d:73:91": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.15",
+    "ip": "10.0.0.17",
     "nodeID": "b0:b8:11:7d:73:91",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -67,7 +67,7 @@
   "b0:c3:af:19:3d:a0": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.14",
+    "ip": "10.0.0.12",
     "nodeID": "b0:c3:af:19:3d:a0",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -80,7 +80,7 @@
   "b0:cf:4e:01:80:c1": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.16",
+    "ip": "10.0.0.18",
     "nodeID": "b0:cf:4e:01:80:c1",
     "position": {
       "py/object": "positioning.positioning.Position",
@@ -93,7 +93,7 @@
   "b0:eb:88:71:90:e8": {
     "py/object": "positioning.positioning.Node",
     "active": false,
-    "ip": "10.0.0.17",
+    "ip": "10.0.0.13",
     "nodeID": "b0:eb:88:71:90:e8",
     "position": {
       "py/object": "positioning.positioning.Position",

@@ -1,5 +1,5 @@
 from utils import Interval
-import sys, getopt
+import sys, getopt, time
 import socket
 import json
 import pymysql
@@ -42,6 +42,12 @@ def main(argv):
     global GRAPH_ENABLED
     opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
     del(args)
+
+    startTime = time.time()
+
+    counter_37 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
+    counter_38 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
+    counter_39 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
 
     if len(opts) == 0:
         print("udp_listener.py -i <server IP address>")
@@ -90,13 +96,30 @@ def main(argv):
                 db.commit()
             
 
-            dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
+            #dist = distance.empiricalDistance(data['RSSI'], 4, -45.0)
 
             if data['channel'] == 37:
+                counter_37["total"] += 1
                 color = 'r'
+                if data["CRC"] == 0:
+                    counter_37["CRC_error"] += 1
+                if data["LPE"] == 1:
+                    counter_37["LPE_error"] += 1
             elif data['channel'] == 38:
+                counter_38["total"] += 1
+                color = 'r'
+                if data["CRC"] == 0:
+                    counter_38["CRC_error"] += 1
+                if data["LPE"] == 1:
+                    counter_38["LPE_error"] += 1
                 color = 'g'
             if data['channel'] == 39:
+                counter_39["total"] += 1
+                color = 'r'
+                if data["CRC"] == 0:
+                    counter_39["CRC_error"] += 1
+                if data["LPE"] == 1:
+                    counter_39["LPE_error"] += 1
                 color = 'b'
 
             if GRAPH_ENABLED and data['channel'] == 37:
@@ -138,6 +161,11 @@ def main(argv):
         except KeyboardInterrupt:
             print("Shutting down interval...")
             interval.stop()
+            print("")
+            print("Recording time: ", time.time() - startTime)
+            print("Channel 37 - total: ", counter_37["total"], "\t CRC errors: ", counter_37["CRC_error"], "\t LPE errors: ", counter_37["LPE_error"])
+            print("Channel 38 - total: ", counter_38["total"], "\t CRC errors: ", counter_38["CRC_error"], "\t LPE errors: ", counter_38["LPE_error"])
+            print("Channel 39 - total: ", counter_39["total"], "\t CRC errors: ", counter_39["CRC_error"], "\t LPE errors: ", counter_39["LPE_error"])
             break
 
 if __name__ == "__main__":
