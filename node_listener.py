@@ -6,7 +6,7 @@ import pymysql
 from calc import distance
 
 
-DB_ENABLED = False
+DB_ENABLED = True
 GRAPH_ENABLED = False
 
 LISTEN_IP = "0.0.0.0"
@@ -40,10 +40,11 @@ def sendServerInfo(ip):
 def main(argv):
     channel = False
     global GRAPH_ENABLED
-    opts, args = getopt.getopt(argv,"cghi:o",["channel=", "graph=", "ip=","addr=", "address="])
+    opts, args = getopt.getopt(argv,"cghil:o",["channel=", "graph=", "ip=","addr=", "address=","label="])
     del(args)
 
     startTime = time.time()
+    label = ''
 
     counter_37 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
     counter_38 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
@@ -63,6 +64,8 @@ def main(argv):
             channel = int(arg)
         elif opt in ("-g", "--graph"):
             GRAPH_ENABLED = True
+        elif opt in ("-l", "--label"):
+            label = arg
         else:
             print("node_listener.py -i <server IP address>")
             sys.exit(2)
@@ -80,6 +83,20 @@ def main(argv):
         try:
             rawData, addr = listenSocket.recvfrom(1024)
             data = json.loads(rawData)
+            ip = addr[0]
+            nodeID = data['nodeID']
+            timestamp = data['timestamp']
+            address = data['address']
+            channel = data['channel']
+            counter = data['counter']
+            rssi = data['RSSI']
+            crc = data['CRC']
+            lpe = data['LPE']
+            syncController = data['syncController']
+
+
+
+
             printing = False
 
             if "MAC" in data:
@@ -90,8 +107,8 @@ def main(argv):
             times[addr[0]] = data['timestamp']
 
             if DB_ENABLED:
-                sql = "INSERT INTO rssi_data VALUES(NULL, '%s', '%d', '%s', %d, %d, %d, %d, NULL)" % (addr[0], data['timestamp'] , data['address'], data['channel'], data['RSSI'], data['CRC'], data['LPE'])
-
+                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, NULL, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, crc, lpe, syncController, label)
+                print(sql)
                 cursor.execute(sql)
                 db.commit()
             

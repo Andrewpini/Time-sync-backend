@@ -15,7 +15,7 @@ testData = [(0, 0, 2, 5.144),
     
 p0 = [1, 1, 1.5]
 
-def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3, bounds=([-2, 0, 0], [5, 11, 3])):
+def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3, bounds=None):
     def residuals(point, *data):
         if dimensions == 2:
             point[2] = 0
@@ -26,7 +26,10 @@ def multilateration(data, startingPoint=p0, plotEnabled=False, dimensions=3, bou
             #return np.array([np.sqrt( np.square(p[0] - point[0]) + np.square(p[1] - point[1]) + np.square(p[2] - point[2])) / p[3] - 1 for p in data])
     
     #plsq = leastsq(residuals, startingPoint, args=(data))
-    plsq = least_squares(residuals, startingPoint, args=data, bounds=bounds)
+    if bounds != None:
+        plsq = least_squares(residuals, startingPoint, args=data, bounds=bounds)
+    else:
+        plsq = least_squares(residuals, startingPoint, args=data)
 
     return (round(plsq['x'][0], 2), round(plsq['x'][1], 2), round(plsq['x'][2], 2))
     #return (round(plsq[0][0], 2), round(plsq[0][1], 2), round(plsq[0][2], 2))

@@ -14,13 +14,14 @@ from utils import setup
 
 # Configuration
 DB_ENABLED              = True                          # Stores all data to database
-DB_TABLE                = "position_moving_testing"     # Table name for wehre to store data
+DB_TABLE                = "position_testing"     # Table name for wehre to store data
 GRAPH_ENABLED           = True                          # Display real-time tracking graphics
 NUMBER_OF_NODES_TO_USE  = 6                             # Number of nodes to use in the positioning algorithm, uses n nodes with shortest ditance to tag
 
 
 POSITION_DIMENSIONS     = 3
 SAMPLES_FOR_EACH_UPDATE = 20
+defaultTxPower          = 0
 
 # Log-distance path loss model config
 LOG_DISTANCE_ST_DEV     = 0.0
@@ -122,6 +123,7 @@ def main(argv):
         setupConfig["broadcastSocket"] = broadcastSocket
 
         nodes = setup.setupNodes(setupConfig, fromFile=False) 
+        configFile = "config.txt"
         print(nodes)
     else:
         nodes = setup.setupNodes(None, fromFile=True, fileName=configFile)
@@ -158,7 +160,7 @@ def main(argv):
             if "txPower" in data:
                 txPower = data['txPower']
             else:
-                txPower = 0
+                txPower = defaultTxPower
             rssi = data['RSSI']
             crc = data['CRC']
             lpe = data['LPE']
@@ -213,7 +215,7 @@ def main(argv):
                 if DB_ENABLED:
                     sql = "INSERT INTO `%s` VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, %d, %f, %d, NULL, %d, %d, %d, '%s', '%s', NULL, '%s', '%s', '%s')" % (DB_TABLE, nodeID, ip, timestamp, address, channel, counter, txPower, rssi, filteredRssi, 0, crc, lpe, syncController, label, configFile, truePosition, nodePosition, settings)
             
-            if totalCounter > 0 and totalCounter % 24 == 0:
+            if totalCounter > 0 and totalCounter % 6 == 0:
                 if GRAPH_ENABLED:
                     ax.cla()
                     ax.set_xlim((-5, 10))
@@ -235,8 +237,8 @@ def main(argv):
                         z = node.position.z
                                        
                         # Log-distance path loss model  
-                        filteredRssi = node.tags[tagAddress].filteredRssi    
-                        node.tags[tagAddress].distance = round(distance.logDistancePathLoss(filteredRssi, rssi_d0=-LOG_DISTANCE_RSSI_D0, d0=LOG_DISTANCE_D0, n=LOG_DISTANCE_N, stDev=LOG_DISTANCE_ST_DEV), 2)
+                        filteredRssi = node.tags[tagAddress].filteredRssi   
+                        node.tags[tagAddress].distance = distance.logDistancePathLoss(filteredRssi, rssi_d0=LOG_DISTANCE_RSSI_D0, d0=LOG_DISTANCE_D0, n=LOG_DISTANCE_N, stDev=LOG_DISTANCE_ST_DEV)
 
                         radius = node.tags[tagAddress].distance
                         positions.append((x, y, z, radius))
