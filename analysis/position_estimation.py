@@ -12,13 +12,13 @@ from positioning.positioning import Tag, Node, Position
 
 # General settings
 USE_WINDOWS           = False
-SAVE_TO_CSV           = True    # Saves position estimates to CSV
-SAVE_TO_PICKLE        = False
-GET_DATA_FROM_FILE    = True
-GET_DATA_FROM_DB      = False
-PLOT_ENABLED          = False
-ONLY_FILTERED         = True
-USE_RSSI_FILTER       = False
+SAVE_TO_CSV           = False    # Saves position estimates to CSV
+SAVE_TO_PICKLE        = True
+GET_DATA_FROM_FILE    = False
+GET_DATA_FROM_DB      = True
+PLOT_ENABLED          = True
+ONLY_FILTERED         = False
+USE_RSSI_FILTER       = True
 SELECTIVE_PL_PARAMS   = False
 USE_ALT_METHOD        = False
 
@@ -26,10 +26,10 @@ USE_ALT_METHOD        = False
 csvFolderPrefix       = "Test_888"
 
 # Pickle dump settings
-pickleDumpFolder      = "allPositions"
+pickleDumpFolder      = "allSelfPositions"
 
 # DB query config
-tableName             = "position_testing"
+tableName             = "self_positioning_testing"
 label                 = ''
 address               =  None     #'d5:ce:11:52:a6:0f' #%14:60:d6:26:46:b6'; %"47:c5:1c:ff:47:c5";
 selection             = 'NodeID, Channel, Counter, Address, RSSI, Node_position, True_tag_position'
@@ -54,10 +54,10 @@ yaxis                 = (-2, 11)
 
 # Positioning configuration
 numberOfIterations    = 80
-numberOfNodesToUse    = 8
+numberOfNodesToUse    = 7
 maxNumberOfNodes      = 8
-multiStartingPoint    = [0, 0, 0.85]
-multiBounds           = ([-2, 0, 0.84], [6, 11, 1.8])
+multiStartingPoint    = [0, 0, 2.7]
+multiBounds           = ([-2, 0, 2.65], [6, 11, 2.75])
 log_d_n               = 1.78
 d0                    = 1.0
 rssi_d0               = -38.0
@@ -220,9 +220,9 @@ if tableName == "position_moving_testing":
 
 if GET_DATA_FROM_DB:
   rowsDataSet = pd.read_sql(q, conn)
-  rowsDataSet.to_pickle('Data_dumps/' + pickleDumpFolder) 
+  rowsDataSet.to_pickle('Data_dump/' + pickleDumpFolder) 
 elif GET_DATA_FROM_FILE:
-  rowsDataSet = pd.read_pickle('Data_dumps/' + pickleDumpFolder) 
+  rowsDataSet = pd.read_pickle('Data_dump/' + pickleDumpFolder) 
 
 if PLOT_ENABLED:
   import matplotlib.pyplot as plt
@@ -434,7 +434,7 @@ for _, record in labelsDataSet.iterrows():
       plt.plot(rawX, rawY, color=rawTagColor)
       plt.plot(positionX, positionY, color=tagColor)
       plt.plot(filteredX[10:], filteredY[10:], color=kalmanTagColor)
-      positionfilteredYndicator = plt.Circle(positionEstimate, radius=tagPositionDotRadius, color=tagColor, alpha=1)
+      positionfilteredIndicator = plt.Circle(positionEstimate, radius=tagPositionDotRadius, color=tagColor, alpha=1)
       positionIndicator = plt.Circle(filteredPosition, radius=tagPositionDotRadius, color=kalmanTagColor, alpha=1)
       ax.add_patch(positionIndicator)
       plt.draw()

@@ -9,6 +9,8 @@ from calc import distance
 DB_ENABLED = True
 GRAPH_ENABLED = False
 
+DEFAULT_TX_POWER = 0
+
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
 
@@ -25,7 +27,6 @@ broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 if DB_ENABLED:
     # Open database connection
-    #db = pymysql.connect(host = "positioning.cbgkbhphknqn.us-east-2.rds.amazonaws.com", user = "jtguggedal", passwd = "", db = "positioning_db", port = #3306, cursorclass = pymysql.cursors.DictCursor)
     db = pymysql.connect(host = "localhost", user = "root", passwd = "admin", db = "positioning", port = 3306, cursorclass = pymysql.cursors.DictCursor)
 
     # prepare a cursor object using cursor() method
@@ -40,11 +41,12 @@ def sendServerInfo(ip):
 def main(argv):
     channel = False
     global GRAPH_ENABLED
-    opts, args = getopt.getopt(argv,"cghil:o",["channel=", "graph=", "ip=","addr=", "address=","label="])
-    del(args)
+    opts, args = getopt.getopt(argv,"cghilt:o",["channel=", "graph=", "ip=","addr=", "address=","label=","txpower="])
+    del(args) 
 
     startTime = time.time()
     label = ''
+    txPower = DEFAULT_TX_POWER
 
     counter_37 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
     counter_38 = {"total" : 0, "CRC_error" : 0, "LPE_error" : 0}
@@ -66,6 +68,8 @@ def main(argv):
             GRAPH_ENABLED = True
         elif opt in ("-l", "--label"):
             label = arg
+        elif opt in ("-t", "--txpower"):
+            txPower = arg
         else:
             print("node_listener.py -i <server IP address>")
             sys.exit(2)
@@ -95,8 +99,6 @@ def main(argv):
             syncController = data['syncController']
 
 
-
-
             printing = False
 
             if "MAC" in data:
@@ -107,7 +109,7 @@ def main(argv):
             times[addr[0]] = data['timestamp']
 
             if DB_ENABLED:
-                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, NULL, NULL, %d, %d, %d, '%s')" % (nodeID, ip, timestamp, address, channel, counter, rssi, crc, lpe, syncController, label)
+                sql = "INSERT INTO rssi_data VALUES(NULL, NULL, '%s', '%s', %d, '%s', %d, %d, %d, NULL, NULL, NULL, %d, %d, %d, '%s', %d)" % (nodeID, ip, timestamp, address, channel, counter, rssi, crc, lpe, syncController, label, txPower)
                 print(sql)
                 cursor.execute(sql)
                 db.commit()
