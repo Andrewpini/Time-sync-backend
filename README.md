@@ -61,12 +61,13 @@ The nodes have a command system installed. By sending commands to the nodes, it'
 To send command messages, import predefined commands from `commands/packetsender_commands.ini` into PacketSender. From PacketSender, each command can be modified and sent. 
 
 The commands are strcutured as follows
+
 | Field type  | Byte index  | Byte length   | Default value   |
 |-------------|:-------------:|:---------------:|:-----------------:|
-Prefix      | 0 | 16 | `CONTROL_COMMAND:` |
-Command     | 16 | 1  ||
-Payload length | 17 |1   ||
-Payload        | 18 | -  ||
+| Prefix      | 0 | 16 | `CONTROL_COMMAND:` |
+| Command     | 16 | 1  ||
+| Payload length | 17 |1   ||
+| Payload        | 18 | -  ||
 
 An example of a command is to set a node as sync node. The command may look as follows in PacketSender's ASCII view: `CONTROL_COMMAND:F\04\n\00\00\0c` and `43 4f 4e 54 52 4f 4c 5f 43 4f 4d 4d 41 4e 44 3a 46 04 0a 00 00 0c` in HEX representation. The last 4 bytes are the IP address of the node that will function as time sync controller: `10.0.0.12`. Change the last byte to set any other node as controller.
 
