@@ -61,8 +61,38 @@ The nodes have a command system installed. By sending commands to the nodes, it'
 To send command messages, import predefined commands from `commands/packetsender_commands.ini` into PacketSender. From PacketSender, each command can be modified and sent. 
 
 The commands are strcutured as follows
-- ASCII string prefix `CONTROL_COMMAND:` always starts a command message
-- The following byte is the command type, followed by a payload length byte
-- The subsequent bytes are the payload
+| Field type  | Byte index  | Byte length   | Default value   |
+|-------------|:-------------:|:---------------:|:-----------------:|     
+Prefix      | 0 | 16 | `CONTROL_COMMAND:` |
+Command     | 16 | 1  ||
+Payload length | 17 |1   ||
+Payload        | 18 | -  ||
 
 An example of a command is to set a node as sync node. The command may look as follows in PacketSender's ASCII view: `CONTROL_COMMAND:F\04\n\00\00\0c` and `43 4f 4e 54 52 4f 4c 5f 43 4f 4d 4d 41 4e 44 3a 46 04 0a 00 00 0c` in HEX representation. The last 4 bytes are the IP address of the node that will function as time sync controller: `10.0.0.12`. Change the last byte to set any other node as controller.
+
+A full overview of the commands is shown below
+
+| Command | Defined name | Payload | Description | 
+|:----:|--------------|:-------:|-------------|
+  1  | WHOMI_START   | -| Starts to send WHO AM I messages containing the node’s MAC and IP every main loop iteration
+  2  | WHOMI_STOP |- | Stops sending WHO AM I messages
+  10 | CMD_SERVER_IP_BROADCAST  | IP:port | Broadcast message from back-end computer containing IP and port for nodes to contact it |
+  11 | CMD_NEW_SERVER_IP | IP_port | Sent if computer obtains new IP address or changes port number |
+  12 | CMD_NEW_FIRMWARE |- |  The node can download new firmware via TFTP 
+  13 | CMD_NEW_ACCESS_ADDRESS     | 6 byte address |  Sets new BLE access address                                 
+  14 | CMD_ADVERTISING_START  | -  |  The nodes starts advertising                                
+  15 | CMD_ADVERTISING_STOP  | -  |  Stop advertising                                            
+  40 | CMD_ALL_HPLED_ON   | -   |  Switches on all the nodes' HP LEDs                          
+  41 | CMD_ALL_HPLED_OFF  | -  |  Switches off all the nodes' HP LEDs                         
+  42 | CMD_ALL_HPLED_DEFAULT |  - |  Sets HP LED duty cycle to default                           
+  43 | CMD_ALL_HPLED_NEW_DEFAULT   | Units of 1/10  |  Sets new default HP LED duty cycle                          
+  44 | CMD_ALL_HPLED_CUSTOM      | Units of 1/10   |  Sets custom HP LED duty cycle                               
+  50 | CMD_SINGLE_HPLED_ON   |-  |  Switches on single node's HP LED                            
+  51 | CMD_SINGLE_OFF|  -                                                          |  Switches off single node's HP LED                           
+  52 | CMD_SINGLE_HPLED_DEFAULT   | -   |  Sets single node's HP LED to default                        
+  53 | CMD_SINGLE_HPLED_CUSTOM   | Units of 1/10   |  Sets single node's HP LED to custom value                   
+  60 | CMD_SINGLE_ADVERTISING_ON  |  |  Single node starts advertising                              
+  61 | CMD_SINGLE_ADVERTISING_OFF | - |  Single node stops advertising                               
+  70 | CMD_SYNC_NODE_SET  | IP address |  One node gets the role as synchronization signal controller 
+  71 | CMD_SYNC_SET_INTERVAL | Units of 100ms  |  Sets new synchronization signal interval                                                 
+
