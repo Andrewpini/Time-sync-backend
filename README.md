@@ -62,7 +62,7 @@ To send command messages, import predefined commands from `commands/packetsender
 
 The commands are strcutured as follows
 | Field type  | Byte index  | Byte length   | Default value   |
-|-------------|:-------------:|:---------------:|:-----------------:|     
+|-------------|:-------------:|:---------------:|:-----------------:|
 Prefix      | 0 | 16 | `CONTROL_COMMAND:` |
 Command     | 16 | 1  ||
 Payload length | 17 |1   ||
