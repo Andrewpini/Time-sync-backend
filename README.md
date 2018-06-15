@@ -44,10 +44,11 @@ To test if receiveing data from the nodes work, do the following steps after the
   - Insert the correct database credentials in the `db.connect()` function call
 
 
-### Apply positioning algorithm
+### Apply positioning algorithm on demo data
 Perform the following steps to apply a positioning algorithm to data stored in a database
 - Run the SQL query in `db/create_table_positioning.sql` to create a demo table 
-- Run the SQL queries in `db/positioning_test_dump.sql` to populate the demo table with real test data
+- Extract the content of `db/positioning_test_dump.zip`
+- Run the SQL queries in `db/positioning_test_dump.sql` to populate the demo table with real test data or import the same data using the CSV file
 - In a terminal, run `python processing/analysis/position_estimation.py`
 - Data will be fetched from the database, and after a while a graphical representation of the indoor environment will be shown. 
   - The red dots are nodes, the green es the tags true position
