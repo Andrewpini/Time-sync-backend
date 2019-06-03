@@ -1,4 +1,5 @@
 from utils import Interval
+import random
 import sys
 import getopt
 import time
@@ -8,11 +9,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import style
 
-
-style.use('fivethirtyeight')
-
-fig = plt.figure()
-ax1 = fig.add_subplot(1, 1, 1)
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -29,21 +25,19 @@ broadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 broadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 
-def animate(i):
-    print("tjohei")
-    ax1.clear()
-
-    #for p_id, p_info in participants.items():
-      #  for key in p_info:
-           # print(key + ':', p_info[key])
-          #  ax1.plot(key["x_coordinate"], key["y_coordinate"])
-
-ani = animation.FuncAnimation(fig, animate, interval=1000)
-plt.ion()
-
 def send_server_info(ip):
     message = "CONTROL_COMMAND:" + chr(10) + chr(32) + "position_server: " + ip + ":" + str(LISTEN_PORT)
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
+
+
+def create_plot():
+    p = plt.figure(1).add_subplot(1, 1, 1)
+    plt.ion()
+    plt.show()
+    plt.draw()
+    plt.grid()
+    return p
+
 
 
 def main(argv):
@@ -68,9 +62,7 @@ def main(argv):
     print("Starting Interval, press CTRL+C to stop.")
     interval.start()
 
-   # ani = animation.FuncAnimation(fig, animate, interval=1000)
-   # plt.ion()
-   # plt.show()
+    plot = create_plot()
 
     while True:
         try:
@@ -84,16 +76,29 @@ def main(argv):
             if addr[0] in participants:
                 participants[ip]["x_coordinate"].append(timetic)
                 participants[ip]["y_coordinate"].append(drift)
-                #print(participants[ip])
+
+                log_file = open("datadrift_log.txt", "a")
+                log_file.write("Addr: " + str(ip) + " Time: " + str(timetic) + " Drift: " + str(drift) +"\n")
+                log_file.close()
             else:
                 participants[ip] = {"Farge": 'grønn', "x_coordinate": [], "y_coordinate": []}
-                #print(participants)
+
+            plot.clear()
+            for participant in participants.values():
+                plot.plot(participant['y_coordinate'])
+            plt.draw()
+            plt.pause(0.001)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
+            log_file.close()
             interval.stop()
             break
 
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+
+
+

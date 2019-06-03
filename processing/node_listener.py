@@ -176,7 +176,7 @@ def main(argv):
                     colorCode = "\u001b[31m"
                 else:
                     colorCode = ""
-                print(colorCode, " From", addr[0], "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE'], "\tSyncer: ", data['syncController'], "\033[0m")
+                print(colorCode, " From", 7, "\tTimestamp: ", times[addr[0]], "\tCounter: ", data['counter'], "\tAddr.: ", data['address'], "\tChannel: ", data['channel'], "\tRSSI: ", data['RSSI'], "\tCRC: ", data['CRC'], "\tLPE: ", data['LPE'], "\tSyncer: ", data['syncController'], "\033[0m")
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
