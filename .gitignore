@@ -3,4 +3,5 @@
 node_modules
 .vscode
 Data_dump
+datadrift_log.txt
 

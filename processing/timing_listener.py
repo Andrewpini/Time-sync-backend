@@ -86,8 +86,9 @@ def main(argv):
             plot.clear()
             for participant in participants.values():
                 plot.plot(participant['y_coordinate'])
+            plt.grid()
             plt.draw()
-            plt.pause(0.001)
+            plt.pause(0.100)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
