@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore
-import serial.tools.list_ports
 import pyqtgraph as pg
 import numpy as np
 import sys
@@ -22,57 +21,42 @@ Once I find a proper solution I will update the code.
 """
 val1 = 0
 val2 = 0
+val3 = 0
+is_graph_added = False
+LINECOLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'w']
 
-ser = None
-dt = 500  # Time delta in milliseconds
+dt = 1000  # Time delta in milliseconds
 element_count = 0
 curves = list()
 curve_xdata = list()
+curve_x = object
 
-size = 500
-buffersize = 2*500
-#serial_number = "9553034373435110E020"
+size = 10
+buffersize = 2*10
 
+class CurveObj:
 
-def find_device(sn):
-    ports = serial.tools.list_ports.comports()
-    for p in ports:
-        if p.serial_number == sn:
-            comport = p.device
-            print("Found device on", p.device)
-            return comport
-    return "Not found"
+    def __init__(self, var, inc):
+        self.plot_var = var
+        self.increment = inc
 
+    buffer = object
+    curve = object
 
-def connect_to_device(comport):
-    return serial.Serial(comport, 9600, timeout=1)
+    # def ret_and_inc_var(self):
+    #     self.plot_var += self.increment
+    #     return self.plot_var
+    #
+    # def update_buffer(self):
+    #     i = self.buffer[buffersize]
+    #     self.buffer[i] = self.buffer[i+size] = self.ret_and_inc_var()
+    #     self.buffer[buffersize] = i = (i+1) % size
+    #     return i
 
 
 def poll_button(lineedit):
     return(lineedit.text())
 
-
-def find_length(ser):
-    elements = 0
-    for x in range(5):
-        line = ser.readline()
-        csv = line.decode().split(',')
-        elements += len(csv)
-    return elements/5
-
-
-# def qlewrapper():
-#     global element_count
-#     serial_number = poll_button(t1)
-#     comport = find_device(serial_number)
-#     if comport == "Not found":
-#         return
-#     global ser
-#     ser = connect_to_device(comport)
-#     print(comport)
-#     element_count = int(math.ceil(find_length(ser)))
-#     print("There are", element_count, "values in the CSV")
-#
 
 def make_curves(x, px):
     global element_count, curves, curve_xdata, buffersize
@@ -88,14 +72,13 @@ def shift_elements(buffer, csv):
     buffer[buffersize] = i = (i+1) % size
 
 
-def close_port():
-    global ser
-    if (ser != None):
-        ser.close()
+def add_graph():
+    global is_graph_added, curve_x
+    is_graph_added = True
+    curve_x = p1.plot(pen='r', name="Data 3")
 
 
 def close_app():
-    close_port()
     sys.exit()
 
 # for Spyder. When you close your window, the QtApplicaiton instance is
@@ -114,8 +97,8 @@ win.resize(1000, 600)
 layout = QtGui.QGridLayout()
 win.setLayout(layout)
 
-# b1 = QtGui.QPushButton("Poll")
-# b1.clicked.connect(qlewrapper)
+b1 = QtGui.QPushButton("Add graph")
+b1.clicked.connect(add_graph)
 
 b2 = QtGui.QPushButton("Close")
 b2.clicked.connect(close_app)
@@ -130,44 +113,94 @@ p1.setLabel('left', 'Amplitude (16bit Signed)')
 
 curve1 = p1.plot(pen='y', name="Data 1")
 curve2 = p1.plot(pen='g', name="Data 2")
-# curve3 = p1.plot()
+
+for i in range(3):
+    new_curve = CurveObj(0, i)
+    print(new_curve.increment)
+    new_curve.curve = p1.plot(pen=LINECOLORS[i], name=LINECOLORS[i])
+    new_curve.buffer = np.zeros(buffersize+1, int)
+    curves.append(new_curve)
+# curves.append(CurveObj(0,3))
+# curves.append(CurveObj(0,2))
+# curves[0].curve = p1.plot(pen='b', name="Data 1")
+# curves[1].curve = p1.plot(pen='g', name="Data 2")
+# curves[2].curve = p1.plot(pen='y', name="Data 3")
+
 
 layout.addWidget(p1, 0, 0, 1, 3)
-# layout.addWidget(b1, 1, 0)
+layout.addWidget(b1, 1, 0)
 # layout.addWidget(t1, 1, 1)
 layout.addWidget(b2, 1, 2)
 
 
 buffer1 = np.zeros(buffersize+1, int)
 buffer2 = np.zeros(buffersize+1, int)
+buffer3 = np.zeros(buffersize+1, int)
 
 x = 0
 
 
 def update():
-    global curve1, curve2, x, ser, size, buffersize, val1, val2
-    # if(ser != None and ser.is_open):
-    #     line = ser.readline()
-    csv = [5,123456]
+    global curve1, curve2, x, size, buffersize, val1, val2, val3, curve_x
 
     x += 1
-    if len(csv) == 2:
 
-        i = buffer1[buffersize]
-        buffer1[i] = buffer1[i+size] = val1
-        val1 = val1 + 1
-        buffer1[buffersize] = i = (i+1) % size
+    # i = buffer1[buffersize]
+    # buffer1[i] = buffer1[i+size] = val1
+    # val1 = val1 + 1
+    # buffer1[buffersize] = i = (i+1) % size
+    #
+    # j = buffer2[buffersize]
+    # buffer2[j] = buffer2[j+size] = val2
+    # val2 = val2 + 3
+    # buffer2[buffersize] = j = (j+1) % size
+    #
+    # curve1.setData(buffer1[i:i+size])
+    # curve1.setPos(x, 0)
+    # curve2.setData(buffer2[j:j+size])
+    # curve2.setPos(x, 0)
 
-        j = buffer2[buffersize]
-        buffer2[j] = buffer2[j+size] = val2
-        val2 = val2 + 3
-        buffer2[buffersize] = j = (j+1) % size
+    # j = curves[0].buffer[buffersize]
+    # curves[0].buffer[j] = curves[0].buffer[j+size] = curves[0].plot_var
+    # curves[0].plot_var = curves[0].plot_var + 2
+    # curves[0].buffer[buffersize] = j = (j+1) % size
+    #
+    # curves[0].curve.setData(curves[0].buffer[j:j+size])
+    # curves[0].curve.setPos(x, 0)
+    #
+    # k = curves[1].buffer[buffersize]
+    # curves[1].buffer[k] = curves[1].buffer[k+size] = curves[1].plot_var
+    # curves[1].plot_var = curves[1].plot_var + curves[1].increment
+    # curves[1].buffer[buffersize] = k = (k+1) % size
+    #
+    # curves[1].curve.setData(curves[1].buffer[k:k+size])
+    # curves[1].curve.setPos(x, 0)
 
-        curve1.setData(buffer1[i:i+size])
-        curve1.setPos(x, 0)
-        curve2.setData(buffer2[j:j+size])
-        curve2.setPos(x, 0)
-        app.processEvents()
+    for curve in curves:
+        k = curve.buffer[buffersize]
+        curve.buffer[k] = curve.buffer[k + size] = curve.plot_var
+        curve.plot_var = curve.plot_var + curve.increment
+        curve.buffer[buffersize] = k = (k + 1) % size
+
+        curve.curve.setData(curve.buffer[k:k + size])
+        curve.curve.setPos(x, 0)
+
+    print(curves[1].buffer)
+    print(curves[0].buffer)
+    # if is_graph_added:
+    #
+    #     k = buffer3[buffersize]
+    #     buffer3[k] = buffer3[k + size] = val3
+    #     val3 = val3 + 2
+    #     buffer3[buffersize] = k = (k + 1) % size
+    #
+    #     curve_x.setData(buffer3[k:k + size])
+    #     curve_x.setPos(x, 0)
+    #     print(k)
+    #     print(buffer3)
+
+
+    app.processEvents()
 
 
 def write_hei():
@@ -178,10 +211,10 @@ timer.timeout.connect(update)
 timer.start(dt)
 timer.setInterval(dt)
 
-timer2 = QtCore.QTimer()
-timer2.timeout.connect(write_hei)
-timer2.start(200)
-timer2.setInterval(200)
+# timer2 = QtCore.QTimer()
+# timer2.timeout.connect(write_hei)
+# timer2.start(200)
+# timer2.setInterval(200)
 # if(ser != None):
 #  timer.stop()
 win.show()
