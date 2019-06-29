@@ -1,29 +1,13 @@
-# -*- coding: utf-8 -*-
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
 import numpy as np
 import sys
-import math
-"""
-Created on Thu Jan 18 14:38:46 2018
-@author: OzyOzk
-"""
+import random
 
-"""
-If you are on a windows machine, after succesfully running the code once, if you
-terminated and run again, you will get the following error
-SerialException: could not open port 'COM3': PermissionError(13, 'Access is denied.', None, 5)
-You need to either reset your Kernel or delete all environment variables. On Spyder,
-this can be done in the Ipython console. Reset is inside the options menu on the top 
-right of the console (Cog symbol). Remove all variables is to the left of the Cog by
-the stop button.
-Once I find a proper solution I will update the code. 
-"""
-val1 = 0
-val2 = 0
-val3 = 0
-is_graph_added = False
 LINECOLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'w']
+NODES = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf']
+active_nodes = {}
+dummy_counter = 0
 
 dt = 1000  # Time delta in milliseconds
 element_count = 0
@@ -31,8 +15,8 @@ curves = list()
 curve_xdata = list()
 curve_x = object
 
-size = 10
-buffersize = 2*10
+size = 100
+buffersize = 2*100
 
 class CurveObj:
 
@@ -81,11 +65,18 @@ def add_graph():
 def close_app():
     sys.exit()
 
+
+def add_curve():
+    global dummy_counter, LINECOLORS, active_nodes, NODES
+    new_curve = CurveObj(0, random.randint(1, 10))
+    new_curve.curve = p1.plot(pen=LINECOLORS[dummy_counter], name=NODES[dummy_counter])
+    new_curve.buffer = np.zeros(buffersize+1, int)
+    curves.append(new_curve)
+    dummy_counter += 1
+
 # for Spyder. When you close your window, the QtApplicaiton instance is
 # still there after being created once. Therefore check if a Qt instance
 # already exists, if it does, then use it, otherwise, create new instance
-
-
 if not QtGui.QApplication.instance():
     app = QtGui.QApplication([])
 else:
@@ -98,12 +89,10 @@ layout = QtGui.QGridLayout()
 win.setLayout(layout)
 
 b1 = QtGui.QPushButton("Add graph")
-b1.clicked.connect(add_graph)
+b1.clicked.connect(add_curve)
 
 b2 = QtGui.QPushButton("Close")
 b2.clicked.connect(close_app)
-
-# t1 = QtGui.QLineEdit("Enter Device Serial")
 
 p1 = pg.PlotWidget()
 p1.setRange(yRange=[0, 1000000])
@@ -111,31 +100,17 @@ p1.addLegend()
 p1.showGrid(x=True, y=True, alpha=0.8)
 p1.setLabel('left', 'Amplitude (16bit Signed)')
 
-curve1 = p1.plot(pen='y', name="Data 1")
-curve2 = p1.plot(pen='g', name="Data 2")
 
-for i in range(3):
-    new_curve = CurveObj(0, i)
-    print(new_curve.increment)
-    new_curve.curve = p1.plot(pen=LINECOLORS[i], name=LINECOLORS[i])
-    new_curve.buffer = np.zeros(buffersize+1, int)
-    curves.append(new_curve)
-# curves.append(CurveObj(0,3))
-# curves.append(CurveObj(0,2))
-# curves[0].curve = p1.plot(pen='b', name="Data 1")
-# curves[1].curve = p1.plot(pen='g', name="Data 2")
-# curves[2].curve = p1.plot(pen='y', name="Data 3")
-
+# for i in range(3):
+#     new_curve = CurveObj(0, i)
+#     print(new_curve.increment)
+#     new_curve.curve = p1.plot(pen=LINECOLORS[i], name=LINECOLORS[i])
+#     new_curve.buffer = np.zeros(buffersize+1, int)
+#     curves.append(new_curve)
 
 layout.addWidget(p1, 0, 0, 1, 3)
 layout.addWidget(b1, 1, 0)
-# layout.addWidget(t1, 1, 1)
 layout.addWidget(b2, 1, 2)
-
-
-buffer1 = np.zeros(buffersize+1, int)
-buffer2 = np.zeros(buffersize+1, int)
-buffer3 = np.zeros(buffersize+1, int)
 
 x = 0
 
@@ -179,26 +154,11 @@ def update():
     for curve in curves:
         k = curve.buffer[buffersize]
         curve.buffer[k] = curve.buffer[k + size] = curve.plot_var
-        curve.plot_var = curve.plot_var + curve.increment
+        curve.plot_var = curve.plot_var + random.randint(-5,5)
         curve.buffer[buffersize] = k = (k + 1) % size
 
         curve.curve.setData(curve.buffer[k:k + size])
         curve.curve.setPos(x, 0)
-
-    print(curves[1].buffer)
-    print(curves[0].buffer)
-    # if is_graph_added:
-    #
-    #     k = buffer3[buffersize]
-    #     buffer3[k] = buffer3[k + size] = val3
-    #     val3 = val3 + 2
-    #     buffer3[buffersize] = k = (k + 1) % size
-    #
-    #     curve_x.setData(buffer3[k:k + size])
-    #     curve_x.setPos(x, 0)
-    #     print(k)
-    #     print(buffer3)
-
 
     app.processEvents()
 
