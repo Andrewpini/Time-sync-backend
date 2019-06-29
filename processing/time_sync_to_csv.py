@@ -1,5 +1,7 @@
 import csv
 import datetime
+import time
+
 
 from utils import Interval
 import sys
@@ -28,16 +30,18 @@ def send_server_info(ip):
     message = "CONTROL_COMMAND:" + chr(10) + chr(32) + "position_server: " + ip + ":" + str(LISTEN_PORT)
     broadcastSocket.sendto(message.encode(), (BROADCAST_IP, BROADCAST_PORT))
 
+
 now = datetime.datetime.now()
 file_name = "raw_sync_data_" + now.strftime("%d-%m-%Y(%H_%M)") + ".csv"
 
 
-
 with open(file_name, 'w', newline='') as csvfile:
-    fieldnames = ['Event_ID', 'Node', 'Timestamp(in microsec)']
+    fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.close()
+
+
 def main(argv):
     opts, args = getopt.getopt(argv, "cghilt:o", ["ip="])
     del args
@@ -63,21 +67,31 @@ def main(argv):
 
     while True:
         try:
+
+            # Loads the incoming data into a json format
             raw_data, addr = listenSocket.recvfrom(1024)
             data = json.loads(raw_data)
             ip = addr[0]
+
+            # Gets the computer clock for the moment the data sample is recived
+            # and adds it to the raw .csv-file
+            local_time = datetime.datetime.now()
+            local_time = local_time.strftime("%H:%M:%S")
+
+
             event_id = data['timetic']
             timestamp = data['drift']
 
+
             with open(file_name, 'a', newline='') as csvfile:
-                fieldnames = ['Event_ID', 'Node', 'Timestamp(in microsec)']
+                fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-                thisdict = {"Event_ID": event_id, "Node": ip, "Timestamp(in microsec)": timestamp}
+                thisdict = {"Local_time": local_time, "Event_ID": event_id, "Node": ip, "Timestamp": timestamp}
                 print(thisdict)
                 writer.writerow(thisdict)
                 csvfile.close()
 
-
+            time.sleep(2)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
