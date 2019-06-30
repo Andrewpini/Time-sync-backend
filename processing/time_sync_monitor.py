@@ -1,4 +1,3 @@
-
 import getopt
 import socket
 from PyQt5 import QtGui, QtCore
@@ -6,6 +5,15 @@ import pyqtgraph as pg
 import numpy as np
 import sys
 import random
+import csv
+import datetime
+import time
+from utils import Interval
+import sys
+import getopt
+import socket
+import json
+
 
 class CurveObj:
 
@@ -16,6 +24,9 @@ class CurveObj:
     buffer = object
     curve = object
 
+    buffer_x = object
+    buffer_y = object
+
 
 def close_app():
     sys.exit()
@@ -25,20 +36,46 @@ def add_curve():
     global dummy_counter, LINECOLORS, active_nodes, NODES
     new_curve = CurveObj(0, random.randint(1, 10))
     new_curve.curve = p1.plot(pen=LINECOLORS[dummy_counter], name=NODES[dummy_counter])
-    new_curve.buffer = np.zeros(buffersize+1, int)
+    new_curve.buffer_x = list()
+    new_curve.buffer_y = list()
     curves.append(new_curve)
-    dummy_counter += 1
 
 
 def sniff_for_packet():
-    global active_nodes
-    listenSocket.settimeout(0.01)
+    global active_nodes, teller
+    listenSocket.settimeout(0.05)
     try:
         # Loads the incoming data into a json format
         raw_data, addr = listenSocket.recvfrom(1024)
-        active_nodes.add(addr[0])
-        print(active_nodes)
         print(raw_data)
+
+        if raw_data in active_nodes:
+            print('already in there')
+            # active_nodes[raw_data]
+        else:
+            active_nodes[raw_data] = CurveObj(0, random.randint(1, 10))
+            active_nodes[raw_data].curve = p1.plot(pen=LINECOLORS[len(active_nodes)], name=str(raw_data))
+            active_nodes[raw_data].buffer_x = list()
+            active_nodes[raw_data].buffer_y = list()
+
+        teller += 1
+        active_nodes[raw_data].buffer_x.append(teller)
+        timestamp = random.randint(-5,5)
+        active_nodes[raw_data].buffer_y.append(timestamp)
+
+        local_time = datetime.datetime.now()
+        local_time = local_time.strftime("%H:%M:%S")
+
+        with open(file_name, 'a', newline='') as csvfile:
+            fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            thisdict = {"Local_time": local_time, "Event_ID": teller, "Node": str(raw_data), "Timestamp": timestamp}
+            print(thisdict)
+            writer.writerow(thisdict)
+            csvfile.close()
+
+        active_nodes[raw_data].curve.setData(active_nodes[raw_data].buffer_x, active_nodes[raw_data].buffer_y)
+        app.processEvents()
 
     except socket.timeout:
         a = 0
@@ -69,16 +106,24 @@ def main(argv):
 
 ####################################################################################################
 
+now = datetime.datetime.now()
+file_name = "raw_sync_data_" + now.strftime("%d-%m-%Y(%H_%M)") + ".csv"
+
+with open(file_name, 'w', newline='') as csvfile:
+    fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+    csvfile.close()
 
 LINECOLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'w']
 NODES = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf']
-active_nodes = set()
-dummy_counter = 0
+active_nodes = dict()
 curves = list()
 
 size = 100
 buffersize = 2*100
 x = 0
+teller = 0
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -124,7 +169,6 @@ def update():
         curve.curve.setData(curve.buffer[k:k + size])
         curve.curve.setPos(x, 0)
     app.processEvents()
-    print('jau')
 
 
 timer = QtCore.QTimer()

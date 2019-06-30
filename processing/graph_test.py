@@ -28,6 +28,8 @@ class CurveObj:
     buffer = object
     curve = object
 
+    buffer_x = object
+    buffer_y = object
 
 def close_app():
     sys.exit()
@@ -38,6 +40,8 @@ def add_curve():
     new_curve = CurveObj(0, random.randint(1, 10))
     new_curve.curve = p1.plot(pen=LINECOLORS[dummy_counter], name=NODES[dummy_counter])
     new_curve.buffer = np.zeros(buffersize+1, int)
+    new_curve.buffer_x = list()
+    new_curve.buffer_y = list()
     curves.append(new_curve)
     dummy_counter += 1
 
@@ -79,16 +83,19 @@ x = 0
 
 def update():
     global x, size, buffersize
-    # x += 1
+    x += 1
     for curve in curves:
-        k = curve.buffer[buffersize]
-        curve.buffer[k] = curve.buffer[k + size] = curve.plot_var
-        curve.plot_var = curve.plot_var + random.randint(-5,5)
-        curve.buffer[buffersize] = k = (k + 1) % size
-        curve.curve.setData(curve.buffer[k:k + size])
+        curve.buffer_x.append(x)
+
+        curve.buffer_y.append(random.randint(-5,5))
+        # k = curve.buffer[buffersize]
+        # curve.buffer[k] = curve.buffer[k + size] = curve.plot_var
+        # curve.plot_var = curve.plot_var + random.randint(-5,5)
+        # curve.buffer[buffersize] = k = (k + 1) % size
+        # curve.curve.setData(curve.buffer[k:k + size])
+        curve.curve.setData(curve.buffer_x, curve.buffer_y)
         # zxc.setData([1,2,3,5,6], [1,2,3,2, 1])
         # curve.curve.setPos(x, 0)
-        print(curve.buffer)
     app.processEvents()
 
 
