@@ -1,15 +1,11 @@
 import csv
 import datetime
 import time
-
-
 from utils import Interval
 import sys
 import getopt
 import socket
 import json
-
-
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
@@ -78,6 +74,7 @@ def main(argv):
             local_time = datetime.datetime.now()
             local_time = local_time.strftime("%H:%M:%S")
 
+            #Plot real time graph here
 
             event_id = data['timetic']
             timestamp = data['drift']
@@ -90,8 +87,6 @@ def main(argv):
                 print(thisdict)
                 writer.writerow(thisdict)
                 csvfile.close()
-
-            time.sleep(2)
 
         except KeyboardInterrupt:
             print("Shutting down interval...")
