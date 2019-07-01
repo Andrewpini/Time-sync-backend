@@ -1,88 +1,129 @@
-import getopt
-import socket
+
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
-import numpy as np
-import sys
-import random
 import csv
 import datetime
-import time
-from utils import Interval
 import sys
 import getopt
 import socket
 import json
+import random
+import pandas as pd
+import os
 
 
 class CurveObj:
 
-    def __init__(self, var, inc):
-        self.plot_var = var
-        self.increment = inc
-
-    buffer = object
     curve = object
-
     buffer_x = object
     buffer_y = object
 
 
+def refine_sync_data():
+    df = pd.read_csv(raw_file_name)
+
+    df_init = {'Sample #': [], 'RT Clock': [], 'Max timestamp delta in microseconds': []}
+    df_nice = pd.DataFrame(df_init)
+
+    # Get all unique node names and add a new column for each in the data frame
+    nodes = df.Node.unique()
+    nodes.sort()
+    for node_id in nodes:
+        df_nice[node_id] = 'default value'
+
+    # Get all unique samples and assign one row for each in the data frame
+    sample_ids = df.Event_ID.unique()
+    sample_ids.sort()
+    for i in sample_ids:
+
+        y = {'Sample #': i}
+        x = df.loc[df['Event_ID'] == i]
+        y.update({'RT Clock': x.iloc[0]['Local_time']})
+
+        timestamp_list = []
+        timestamp_diff = []
+
+        for j, row in x.iterrows():
+            y.update({row.Node: row.Timestamp})
+            timestamp_list.append(row.Timestamp)
+
+        for j in timestamp_list:
+            for k in timestamp_list:
+                diff = abs(j - k)
+                if diff > TIMER_MAX_VAL / 2:
+                    diff = TIMER_MAX_VAL - diff
+                timestamp_diff.append(diff)
+
+        y.update({'Max timestamp delta in microseconds': max(timestamp_diff)})
+        df_nice = df_nice.append(y, ignore_index=True)
+
+    df_nice['Sample #'] = df_nice['Sample #'].astype(int)
+    df_nice['Max timestamp delta in microseconds'] = df_nice['Max timestamp delta in microseconds'].astype(int)
+
+    df_nice.to_csv(refined_file_name)
+
+
 def close_app():
+    refine_sync_data()
     sys.exit()
 
 
-def add_curve():
-    global dummy_counter, LINECOLORS, active_nodes, NODES
-    new_curve = CurveObj(0, random.randint(1, 10))
-    new_curve.curve = p1.plot(pen=LINECOLORS[dummy_counter], name=NODES[dummy_counter])
-    new_curve.buffer_x = list()
-    new_curve.buffer_y = list()
-    curves.append(new_curve)
+def create_semi_random_color(low_limit, high_limit, alpha):
+    color_tuple = (low_limit, high_limit, random.randint(low_limit, high_limit))
+    color_tuple = random.sample(color_tuple, len(color_tuple))
+    color_tuple += (alpha,)
+    return color_tuple
 
 
 def sniff_for_packet():
-    global active_nodes, teller
+    global active_nodes, raw_file_name
     listenSocket.settimeout(0.05)
     try:
         # Loads the incoming data into a json format
         raw_data, addr = listenSocket.recvfrom(1024)
-        print(raw_data)
+        data = json.loads(raw_data)
+        ip = addr[0]
 
-        if raw_data in active_nodes:
-            print('already in there')
-            # active_nodes[raw_data]
-        else:
-            active_nodes[raw_data] = CurveObj(0, random.randint(1, 10))
-            active_nodes[raw_data].curve = p1.plot(pen=LINECOLORS[len(active_nodes)], name=str(raw_data))
-            active_nodes[raw_data].buffer_x = list()
-            active_nodes[raw_data].buffer_y = list()
-
-        teller += 1
-        active_nodes[raw_data].buffer_x.append(teller)
-        timestamp = random.randint(-5,5)
-        active_nodes[raw_data].buffer_y.append(timestamp)
-
+        # Gets the computer clock for the moment the data sample is recived
+        # and adds it to the raw .csv-file
         local_time = datetime.datetime.now()
         local_time = local_time.strftime("%H:%M:%S")
 
-        with open(file_name, 'a', newline='') as csvfile:
+        event_id = data['timetic']
+        timestamp = data['drift']
+
+        if ip in active_nodes:
+            print('already in there')
+
+        else:
+            active_nodes[ip] = CurveObj()
+            active_nodes[ip].curve = p1.plot(pen=create_semi_random_color(94, 255, 255), name=ip)
+            active_nodes[ip].buffer_x = list()
+            active_nodes[ip].buffer_y = list()
+
+        active_nodes[ip].buffer_x.append(event_id)
+        active_nodes[ip].buffer_y.append(timestamp)
+
+        with open(raw_file_name, 'a', newline='') as csvfile:
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            thisdict = {"Local_time": local_time, "Event_ID": teller, "Node": str(raw_data), "Timestamp": timestamp}
+            thisdict = {"Local_time": local_time, "Event_ID": event_id, "Node": ip, "Timestamp": timestamp}
             print(thisdict)
             writer.writerow(thisdict)
             csvfile.close()
 
-        active_nodes[raw_data].curve.setData(active_nodes[raw_data].buffer_x, active_nodes[raw_data].buffer_y)
+        active_nodes[ip].curve.setData(active_nodes[ip].buffer_x, active_nodes[ip].buffer_y)
         app.processEvents()
 
     except socket.timeout:
-        a = 0
+        pass
 
 
-def foo():
-    print("This is a button")
+def create_file_names(raw_dir, refined_dir):
+    now = datetime.datetime.now()
+    raw = raw_dir + now.strftime("%d-%m-%Y(%H-%M)") + ".csv"
+    refined = refined_dir + now.strftime("%d-%m-%Y(%H-%M)") + ".csv"
+    return raw, refined
 
 
 def main(argv):
@@ -106,27 +147,25 @@ def main(argv):
 
 ####################################################################################################
 
-now = datetime.datetime.now()
-file_name = "raw_sync_data_" + now.strftime("%d-%m-%Y(%H_%M)") + ".csv"
 
-with open(file_name, 'w', newline='') as csvfile:
+LINE_COLORS = [(3, 7), (3, 7), 'b', 'c', 'm', 'y', 'w']
+LISTEN_IP = "0.0.0.0"
+LISTEN_PORT = 11001
+TIMER_MAX_VAL = 1000000
+RAW_DATA_DIR_NAME = "./raw_data_sets/"
+REFINED_DATA_DIR_NAME = "./refined_data_sets/"
+active_nodes = dict()
+
+os.makedirs(RAW_DATA_DIR_NAME, exist_ok=True)
+os.makedirs(REFINED_DATA_DIR_NAME, exist_ok=True)
+raw_file_name, refined_file_name = create_file_names(RAW_DATA_DIR_NAME, REFINED_DATA_DIR_NAME)
+
+with open(raw_file_name, 'w', newline='') as csvfile:
     fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.close()
 
-LINECOLORS = ['r', 'g', 'b', 'c', 'm', 'y', 'w']
-NODES = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf']
-active_nodes = dict()
-curves = list()
-
-size = 100
-buffersize = 2*100
-x = 0
-teller = 0
-
-LISTEN_IP = "0.0.0.0"
-LISTEN_PORT = 11001
 
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
@@ -142,44 +181,21 @@ win.resize(1000, 600)
 layout = QtGui.QGridLayout()
 win.setLayout(layout)
 
-b1 = QtGui.QPushButton("Add graph")
-b1.clicked.connect(add_curve)
-
-b2 = QtGui.QPushButton("Close")
+b2 = QtGui.QPushButton("End sampling")
 b2.clicked.connect(close_app)
 
 p1 = pg.PlotWidget()
-p1.setRange(yRange=[0, 1000000])
+p1.setYRange(0, TIMER_MAX_VAL)
 p1.addLegend()
 p1.showGrid(x=True, y=True, alpha=0.8)
-p1.setLabel('left', 'Amplitude (16bit Signed)')
 
 layout.addWidget(p1, 0, 0, 1, 3)
-layout.addWidget(b1, 1, 0)
 layout.addWidget(b2, 1, 2)
-
-def update():
-    global x, size, buffersize
-    x += 1
-    for curve in curves:
-        k = curve.buffer[buffersize]
-        curve.buffer[k] = curve.buffer[k + size] = curve.plot_var
-        curve.plot_var = curve.plot_var + random.randint(-5, 5)
-        curve.buffer[buffersize] = k = (k + 1) % size
-        curve.curve.setData(curve.buffer[k:k + size])
-        curve.curve.setPos(x, 0)
-    app.processEvents()
-
 
 timer = QtCore.QTimer()
 timer.timeout.connect(sniff_for_packet)
 timer.start(25)
 timer.setInterval(25)
-
-timer_x = QtCore.QTimer()
-timer_x.timeout.connect(update)
-timer_x.start(1000)
-timer_x.setInterval(1000)
 
 win.show()
 app.exec_()
