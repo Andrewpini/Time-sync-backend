@@ -67,17 +67,6 @@ def close_app():
     refine_sync_data()
     sys.exit()
 
-def closeEvent(self, event):
-    self.signal_program_closing.emit()
-    self.workerThread.stopThread()
-
-    self.ethernetReadThread.stopThread()
-    self.ethernetReadThread.sock.shutdown(socket.SHUT_RDWR)
-    self.ethernetReadThread.sock.close()
-
-    print("*** CLOSING ***")
-    event.accept()
-
 
 def create_semi_random_color(low_limit, high_limit, alpha):
     color_tuple = (low_limit, high_limit, random.randint(low_limit, high_limit))
@@ -159,7 +148,6 @@ def main(argv):
 ####################################################################################################
 
 
-LINE_COLORS = [(3, 7), (3, 7), 'b', 'c', 'm', 'y', 'w']
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
 TIMER_MAX_VAL = 1000000
@@ -167,6 +155,7 @@ RAW_DATA_DIR_NAME = "./raw_data_sets/"
 REFINED_DATA_DIR_NAME = "./refined_data_sets/"
 active_nodes = dict()
 
+# Create directories and file names
 os.makedirs(RAW_DATA_DIR_NAME, exist_ok=True)
 os.makedirs(REFINED_DATA_DIR_NAME, exist_ok=True)
 raw_file_name, refined_file_name = create_file_names(RAW_DATA_DIR_NAME, REFINED_DATA_DIR_NAME)
@@ -181,6 +170,8 @@ with open(raw_file_name, 'w', newline='') as csvfile:
 listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 listenSocket.bind((LISTEN_IP, LISTEN_PORT))
 
+
+# Checks if there already is an existing instance running
 if not QtGui.QApplication.instance():
     app = QtGui.QApplication([])
 else:
