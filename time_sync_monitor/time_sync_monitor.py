@@ -67,6 +67,17 @@ def close_app():
     refine_sync_data()
     sys.exit()
 
+def closeEvent(self, event):
+    self.signal_program_closing.emit()
+    self.workerThread.stopThread()
+
+    self.ethernetReadThread.stopThread()
+    self.ethernetReadThread.sock.shutdown(socket.SHUT_RDWR)
+    self.ethernetReadThread.sock.close()
+
+    print("*** CLOSING ***")
+    event.accept()
+
 
 def create_semi_random_color(low_limit, high_limit, alpha):
     color_tuple = (low_limit, high_limit, random.randint(low_limit, high_limit))
@@ -198,6 +209,7 @@ timer.start(25)
 timer.setInterval(25)
 
 win.show()
+
 app.exec_()
 
 if __name__ == "__main__":
