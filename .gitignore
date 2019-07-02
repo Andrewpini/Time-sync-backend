@@ -2,5 +2,7 @@
 *.pyc
 node_modules
 .vscode
+.idea
 Data_dump
+*.csv
 
