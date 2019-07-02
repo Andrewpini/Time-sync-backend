@@ -102,7 +102,7 @@ def sniff_for_packet():
             active_nodes[ip].buffer_y = list()
 
         active_nodes[ip].buffer_x.append(event_id)
-        active_nodes[ip].buffer_y.append(timestamp)
+        active_nodes[ip].buffer_y.append(timestamp % TIMER_MAX_VAL)
 
         with open(raw_file_name, 'a', newline='') as csvfile:
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
