@@ -7,16 +7,9 @@ import sys
 import getopt
 import socket
 import json
-import random
-import pandas as pd
 import os
-
-
-class CurveObj:
-
-    curve = object
-    buffer_x = object
-    buffer_y = object
+from src import curve_plot
+import pandas as pd
 
 
 def refine_sync_data():
@@ -62,57 +55,42 @@ def refine_sync_data():
 
     df_nice.to_csv(refined_file_name)
 
-
 def close_app():
+    # refine_dataset.refine_sync_data(raw_file_name, refined_file_name, TIMER_MAX_VAL)
     refine_sync_data()
     sys.exit()
 
 
-def create_semi_random_color(low_limit, high_limit, alpha):
-    color_tuple = (low_limit, high_limit, random.randint(low_limit, high_limit))
-    color_tuple = random.sample(color_tuple, len(color_tuple))
-    color_tuple += (alpha,)
-    return color_tuple
-
-
-def sniff_for_packet():
-    global active_nodes, raw_file_name
+def incoming_packet_handler():
+    global active_nodes, raw_file_name, x
     listenSocket.settimeout(0.05)
+
     try:
         # Loads the incoming data into a json format
         raw_data, addr = listenSocket.recvfrom(1024)
         data = json.loads(raw_data)
         ip = addr[0]
+        event_id = data['timetic']
+        timestamp = data['drift']
+
+        # # Add the incoming sample to the plot
+        if ip not in active_nodes:
+            active_nodes[ip] = curve_plot.add_new_curve(pl, ip)
+        active_nodes[ip].add_single_sample(event_id, timestamp % TIMER_MAX_VAL)
+        active_nodes[ip].curve.setData(active_nodes[ip].buffer_x, active_nodes[ip].buffer_y)
 
         # Gets the computer clock for the moment the data sample is recived
         # and adds it to the raw .csv-file
         local_time = datetime.datetime.now()
         local_time = local_time.strftime("%H:%M:%S")
 
-        event_id = data['timetic']
-        timestamp = data['drift']
-
-        if ip in active_nodes:
-            print('already in there')
-
-        else:
-            active_nodes[ip] = CurveObj()
-            active_nodes[ip].curve = p1.plot(pen=create_semi_random_color(94, 255, 255), name=ip)
-            active_nodes[ip].buffer_x = list()
-            active_nodes[ip].buffer_y = list()
-
-        active_nodes[ip].buffer_x.append(event_id)
-        active_nodes[ip].buffer_y.append(timestamp % TIMER_MAX_VAL)
-
         with open(raw_file_name, 'a', newline='') as csvfile:
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            thisdict = {"Local_time": local_time, "Event_ID": event_id, "Node": ip, "Timestamp": timestamp}
-            print(thisdict)
-            writer.writerow(thisdict)
+            this_dict = {"Local_time": local_time, "Event_ID": event_id, "Node": ip, "Timestamp": timestamp}
+            writer.writerow(this_dict)
             csvfile.close()
 
-        active_nodes[ip].curve.setData(active_nodes[ip].buffer_x, active_nodes[ip].buffer_y)
         app.processEvents()
 
     except socket.timeout:
@@ -147,7 +125,6 @@ def main(argv):
 
 ####################################################################################################
 
-
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
 TIMER_MAX_VAL = 1000000
@@ -160,16 +137,17 @@ os.makedirs(RAW_DATA_DIR_NAME, exist_ok=True)
 os.makedirs(REFINED_DATA_DIR_NAME, exist_ok=True)
 raw_file_name, refined_file_name = create_file_names(RAW_DATA_DIR_NAME, REFINED_DATA_DIR_NAME)
 
+listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+listenSocket.bind((LISTEN_IP, LISTEN_PORT))
+
+local_time = datetime.datetime.now()
+local_time = local_time.strftime("%H:%M:%S")
+
 with open(raw_file_name, 'w', newline='') as csvfile:
     fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     csvfile.close()
-
-
-listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-listenSocket.bind((LISTEN_IP, LISTEN_PORT))
-
 
 # Checks if there already is an existing instance running
 if not QtGui.QApplication.instance():
@@ -186,16 +164,21 @@ win.setLayout(layout)
 b2 = QtGui.QPushButton("End sampling")
 b2.clicked.connect(close_app)
 
-p1 = pg.PlotWidget()
-p1.setYRange(0, TIMER_MAX_VAL)
-p1.addLegend()
-p1.showGrid(x=True, y=True, alpha=0.8)
+pl = pg.PlotWidget()
+pl.setYRange(0, TIMER_MAX_VAL)
+pl.addLegend()
+pl.showGrid(x=True, y=True, alpha=0.8)
 
-layout.addWidget(p1, 0, 0, 1, 3)
+layout.addWidget(pl, 0, 0, 1, 3)
 layout.addWidget(b2, 1, 2)
 
+test = curve_plot.add_new_curve(pl, 'pøls')
+test.add_multiple_samples([1,2,3,4,5],[1,2,3,4,5])
+test.add_single_sample(6,6)
+test.curve.setData(test.buffer_x, test.buffer_y)
+
 timer = QtCore.QTimer()
-timer.timeout.connect(sniff_for_packet)
+timer.timeout.connect(incoming_packet_handler)
 timer.start(25)
 timer.setInterval(25)
 
