@@ -102,7 +102,7 @@ def sniff_for_packet():
             active_nodes[ip].buffer_y = list()
 
         active_nodes[ip].buffer_x.append(event_id)
-        active_nodes[ip].buffer_y.append(timestamp % TIMER_MAX_VAL)
+        active_nodes[ip].buffer_y.append(timestamp % GRAPH_Y_AXIS_MAX_VAL)
 
         with open(raw_file_name, 'a', newline='') as csvfile:
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
@@ -150,7 +150,8 @@ def main(argv):
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
-TIMER_MAX_VAL = 1000000
+GRAPH_Y_AXIS_MAX_VAL = 100000
+TIMER_MAX_VAL = 0xffffffff
 RAW_DATA_DIR_NAME = "./raw_data_sets/"
 REFINED_DATA_DIR_NAME = "./refined_data_sets/"
 active_nodes = dict()
