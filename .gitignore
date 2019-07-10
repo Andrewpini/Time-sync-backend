@@ -5,4 +5,5 @@ node_modules
 .idea
 Data_dump
 *.csv
+venv/
 
