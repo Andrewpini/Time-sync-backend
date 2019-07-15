@@ -110,8 +110,8 @@ def sniff_for_packet():
             mean_timer_value = numpy.array(list(timer_values_dict.values())).mean()
             print("Mean timer value: " + str(mean_timer_value))
 
-        # active_nodes[ip].buffer_x.append(event_id)
-        # active_nodes[ip].buffer_y.append(timestamp - mean_timer_value)
+        active_nodes[ip].buffer_x.append(event_id)
+        active_nodes[ip].buffer_y.append(timestamp)
 
         with open(raw_file_name, 'a', newline='') as csvfile:
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
