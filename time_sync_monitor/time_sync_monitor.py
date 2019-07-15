@@ -1,4 +1,3 @@
-
 from PyQt5 import QtGui, QtCore
 import pyqtgraph as pg
 import csv
@@ -10,11 +9,6 @@ import json
 import random
 import pandas as pd
 import os
-import statistics
-import numpy
-
-timer_values_dict = dict()
-mean_timer_value = 0
 
 class CurveObj:
 
@@ -106,10 +100,6 @@ def sniff_for_packet():
             active_nodes[ip].buffer_x = list()
             active_nodes[ip].buffer_y = list()
 
-            timer_values_dict[ip] = timestamp
-            mean_timer_value = numpy.array(list(timer_values_dict.values())).mean()
-            print("Mean timer value: " + str(mean_timer_value))
-
         active_nodes[ip].buffer_x.append(event_id)
         active_nodes[ip].buffer_y.append(timestamp)
 
@@ -159,7 +149,6 @@ def main(argv):
 
 LISTEN_IP = "0.0.0.0"
 LISTEN_PORT = 11001
-# GRAPH_Y_AXIS_MAX_VAL = 100000
 TIMER_MAX_VAL = 0xffffffff
 RAW_DATA_DIR_NAME = "./raw_data_sets/"
 REFINED_DATA_DIR_NAME = "./refined_data_sets/"
