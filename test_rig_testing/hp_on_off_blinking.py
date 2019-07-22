@@ -4,7 +4,6 @@ import time
 UDP_PORT = 10000
 
 blinking_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-# blinking_socket.bind(('255.255.255.255', 10000))
 blinking_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 data = [0x43, 0x4f, 0x4e, 0x54, 0x52, 0x4f, 0x4c, 0x5f, 0x43,
