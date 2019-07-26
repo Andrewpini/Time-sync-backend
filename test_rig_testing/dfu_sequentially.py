@@ -2,6 +2,7 @@ import socket
 import time
 
 UDP_PORT = 10000
+DELAY = 10
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -17,34 +18,41 @@ node_6 = base_data + [0xB0, 0x3A, 0x35, 0x65, 0x2E, 0x03]
 node_7 = base_data + [0xB0, 0xD0, 0x84, 0x8D, 0xDE, 0x7E]
 node_8 = base_data + [0xB0, 0x27, 0x10, 0x22, 0x20, 0x0A]
 
+new_server_ip = [0x43, 0x4f, 0x4e, 0x54, 0x52, 0x4f, 0x4c, 0x5f, 0x43,
+                 0x4f, 0x4d, 0x4d, 0x41, 0x4e, 0x44, 0x3a, 0x0c, 0x00]
+
+print("New server IP")
+sock.sendto(bytearray(new_server_ip), ('255.255.255.255', UDP_PORT))
+time.sleep(10)
+
 print("Node 1 DFU")
 sock.sendto(bytearray(node_1), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 2 DFU")
 sock.sendto(bytearray(node_2), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 3 DFU")
 sock.sendto(bytearray(node_3), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 4 DFU")
 sock.sendto(bytearray(node_4), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 5 DFU")
 sock.sendto(bytearray(node_5), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 6 DFU")
 sock.sendto(bytearray(node_6), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 7 DFU")
 sock.sendto(bytearray(node_7), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
 
 print("Node 8 DFU")
 sock.sendto(bytearray(node_8), ('255.255.255.255', UDP_PORT))
-time.sleep(15)
+time.sleep(DELAY)
