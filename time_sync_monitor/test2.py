@@ -6,11 +6,19 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+def legg_hain_t():
+    ui.add_node('3', '10.0.0.1', 'FFFF')
+
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+import time
 
 
 class Ui_main_widget(object):
+
+    def __init__(self):
+        self.node_list = dict()
+
     def setupUi(self, main_widget):
 
         #--- Create all buttons ---
@@ -122,11 +130,46 @@ class Ui_main_widget(object):
 
         QtCore.QMetaObject.connectSlotsByName(main_widget)
 
+    def add_node(self, unicast, ip, mac):
+        active_node_color = QtGui.QBrush(QtGui.QColor("#4278f5"))
+        if ip in self.node_list:
+            print('already in there')
+            self.node_list[ip]['last_timestamp'] = time.time()
+            self.node_list[ip]['list_item'].setForeground(active_node_color)
+        else:
+            list_item = QtWidgets.QListWidgetItem('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
+            list_item.setForeground(active_node_color)
+
+            self.node_list[ip] = {'ip': ip, 'Mac': mac, 'Uni': unicast, 'last_timestamp': time.time(), 'list_item': list_item}
+            self.list_of_nodes.addItem(self.node_list[ip]['list_item'])
+        print(self.node_list)
+
+    def node_timeout_check(self):
+        unactive_node_color = QtGui.QBrush(QtGui.QColor("#ff1500"))
+        timestamp = time.time()
+        for node_ip in self.node_list:
+            if (timestamp - self.node_list[node_ip]['last_timestamp']) > 5:
+                self.node_list[node_ip]['list_item'].setForeground(unactive_node_color)
+                print('her')
+
+
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     main_widget = QtWidgets.QWidget()
     ui = Ui_main_widget()
     ui.setupUi(main_widget)
+
+    timer = QtCore.QTimer()
+    timer.timeout.connect(ui.node_timeout_check)
+    timer.start(5000)
+
+    ui.init_btn.clicked.connect(legg_hain_t)
+
+    ui.add_node('3', '10.0.0.1', 'FFFF')
+
     main_widget.show()
     sys.exit(app.exec_())
+
+    time.sleep(6)
+    ui.add_node('3', '10.0.0.2', 'FFFF')
