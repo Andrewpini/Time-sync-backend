@@ -2,7 +2,7 @@ import socket
 import time
 
 UDP_PORT = 10000
-DELAY = 10
+DELAY = 3
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
