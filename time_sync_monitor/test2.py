@@ -6,16 +6,44 @@
 #
 # WARNING! All changes made in this file will be lost!
 
+from PyQt5 import QtCore, QtGui, QtWidgets
+import time
+import socket
+import json
+import pyqtgraph as pg
+
+
 def legg_hain_t():
     ui.add_node('3', '10.0.0.1', 'FFFF')
 
 
+def sniff_for_packet():
+    segnal = QtCore.Signal(int, int, object)
+    while True:
+        # Loads the incoming data into a json format
+        raw_data, addr = listenSocket.recvfrom(1024)
+        print(raw_data)
+        # data = json.loads(raw_data)
+        print('Heifaderuttan')
+        # ip = addr[0]
+        segnal.emit(5, 5, 5)
 
 
+class WorkThread(QtCore.QThread):
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-import time
+    # signal_test = QtCore.Signal(int, int, object)
 
+    def __init__(self, run_function, parent=None):
+        super(WorkThread, self).__init__(parent)
+        self.run_function = run_function
+
+    def run(self):
+        if callable(self.run_function):
+            self.run_function()
+
+        # while True:
+        #     print("PEKKALA")
+        #     time.sleep(1)
 
 class Ui_main_widget(object):
 
@@ -134,6 +162,9 @@ class Ui_main_widget(object):
         self.main_layout.addWidget(self.is_init_frame)
         self.main_layout.addWidget(self.init_btn)
 
+        self.plot = pg.PlotWidget()
+        self.main_layout.addWidget(self.plot)
+
 
         QtCore.QMetaObject.connectSlotsByName(main_widget)
 
@@ -142,24 +173,19 @@ class Ui_main_widget(object):
         self.init_btn.clicked.connect(legg_hain_t)
 
     def add_node(self, unicast, ip, mac):
-
         list_ID = str('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
         if list_ID in self.node_list:
-            print('already in there')
             self.node_list[list_ID]['last_timestamp'] = time.time()
             self.node_list[list_ID]['is_active'] = True
             self.node_list[list_ID]['list_item'].setForeground(self.active_node_color)
             if self.selected_item == list_ID:
                 self.is_init_frame.setEnabled(True)
-
         else:
             list_item = QtWidgets.QListWidgetItem(list_ID)
             list_item.setForeground(self.active_node_color)
-
             self.node_list[list_ID] = {'ip': ip, 'Mac': mac, 'Uni': unicast, 'last_timestamp': time.time(), 'list_item': list_item, 'selector_idx': self.node_count, 'is_active': True}
             self.list_of_nodes.addItem(self.node_list[list_ID]['list_item'])
             self.node_count += 1
-        print(self.node_list)
 
     def node_timeout_check(self):
         timestamp = time.time()
@@ -167,11 +193,8 @@ class Ui_main_widget(object):
             if (timestamp - self.node_list[node_ip]['last_timestamp']) > 5:
                 self.node_list[node_ip]['list_item'].setForeground(self.unactive_node_color)
                 self.node_list[node_ip]['is_active'] = False
-                print(self.selected_item)
-                print(node_ip)
                 if self.selected_item == node_ip:
                     self.is_init_frame.setEnabled(False)
-                    print('node_timeout_check FALSE')
 
     def on_item_changed(self, curr, prev):
 
@@ -179,10 +202,8 @@ class Ui_main_widget(object):
             self.list_of_nodes.setCurrentItem(self.node_list[self.selected_item]['list_item'])
             if self.node_list[self.selected_item]['is_active']:
                 self.is_init_frame.setEnabled(True)
-                print('change item TRUE')
             else:
                 self.is_init_frame.setEnabled(False)
-                print('change item FALSE')
 
 if __name__ == "__main__":
     import sys
@@ -201,13 +222,16 @@ if __name__ == "__main__":
     ui.add_node('3', '10.0.0.2', 'FFFF')
 
     ui.is_init_frame.setEnabled(False)
-    # ui.list_of_nodes.currentItemChanged.connect(on_item_changed)
-    # ui.time_sync_selector.clear()
-    # ui.time_sync_selector.insertItem(0, 'anders')
-    # ui.time_sync_selector.insertItem(6, 'erik')
-    # ui.time_sync_selector.insertItem(2, 'martin')
+
+    # --- Ethernet listener ---
+    LISTEN_IP = "0.0.0.0"
+    LISTEN_PORT = 11005
+    listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    listenSocket.bind((LISTEN_IP, LISTEN_PORT))
 
 
+    thread = WorkThread(sniff_for_packet)
+    thread.start()
 
     main_widget.show()
     sys.exit(app.exec_())
