@@ -10,6 +10,9 @@ def legg_hain_t():
     ui.add_node('3', '10.0.0.1', 'FFFF')
 
 
+
+
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 
@@ -18,6 +21,10 @@ class Ui_main_widget(object):
 
     def __init__(self):
         self.node_list = dict()
+        self.node_count = 0
+        self.selected_item = str()
+        self.active_node_color = QtGui.QBrush(QtGui.QColor("#4278f5"))
+        self.unactive_node_color = QtGui.QBrush(QtGui.QColor("#ff1500"))
 
     def setupUi(self, main_widget):
 
@@ -44,8 +51,8 @@ class Ui_main_widget(object):
 
         # --- Create all lists ---
         self.list_of_nodes = QtWidgets.QListWidget()
-        self.list_of_nodes.setProperty("showDropIndicator", False)
-        self.list_of_nodes.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        # self.list_of_nodes.setProperty("showDropIndicator", True)
+        # self.list_of_nodes.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
         self.list_of_nodes.setObjectName("list_of_nodes")
 
 
@@ -71,7 +78,7 @@ class Ui_main_widget(object):
         self.sync_line_gbox.setTitle("Sync line")
         self.sync_line_gbox_layout = QtWidgets.QVBoxLayout(self.sync_line_gbox)
         self.sync_line_gbox_layout.setObjectName("sync_line_gbox_layout")
-        self.sync_line_gbox_layout.addWidget(self.sync_line_selector)
+        # self.sync_line_gbox_layout.addWidget(self.sync_line_selector)
         self.sync_line_gbox_layout.addWidget(self.sync_line_label)
         self.sync_line_btn_layout = QtWidgets.QHBoxLayout()
         self.sync_line_btn_layout.setObjectName("sync_line_btn_layout")
@@ -88,7 +95,7 @@ class Ui_main_widget(object):
         self.time_sync_gbox_layout.setObjectName("time_sync_gbox_layout")
         self.time_sync_btn_layout = QtWidgets.QHBoxLayout()
         self.time_sync_btn_layout.setObjectName("time_sync_btn_layout")
-        self.time_sync_gbox_layout.addWidget(self.time_sync_selector)
+        # self.time_sync_gbox_layout.addWidget(self.time_sync_selector)
         self.time_sync_gbox_layout.addWidget(self.time_sync_label)
         self.time_sync_btn_layout.addWidget(self.time_sync_start_btn)
         self.time_sync_btn_layout.addWidget(self.time_sync_stop_btn)
@@ -104,7 +111,7 @@ class Ui_main_widget(object):
         self.nodes_gbox_layout.addWidget(self.list_of_nodes)
 
 
-        # ---  Create is initialized frame group box ---
+        # ---  Create "is initialized frame" group box ---
         #(used to group objects that needs to be collectivly be enabled/disabled)
         self.is_init_frame = QtWidgets.QFrame()
         self.is_init_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -123,35 +130,59 @@ class Ui_main_widget(object):
         main_widget.setWindowTitle("Command Panel")
         self.main_layout = QtWidgets.QVBoxLayout(main_widget)
         self.main_layout.setObjectName("main_layout")
-        self.main_layout.addWidget(self.init_btn)
         self.main_layout.addWidget(self.nodes_gbox)
         self.main_layout.addWidget(self.is_init_frame)
+        self.main_layout.addWidget(self.init_btn)
 
 
         QtCore.QMetaObject.connectSlotsByName(main_widget)
 
-    def add_node(self, unicast, ip, mac):
-        active_node_color = QtGui.QBrush(QtGui.QColor("#4278f5"))
-        if ip in self.node_list:
-            print('already in there')
-            self.node_list[ip]['last_timestamp'] = time.time()
-            self.node_list[ip]['list_item'].setForeground(active_node_color)
-        else:
-            list_item = QtWidgets.QListWidgetItem('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
-            list_item.setForeground(active_node_color)
+        # --- Connect widgets ---
+        self.list_of_nodes.currentItemChanged.connect(self.on_item_changed)
+        self.init_btn.clicked.connect(legg_hain_t)
 
-            self.node_list[ip] = {'ip': ip, 'Mac': mac, 'Uni': unicast, 'last_timestamp': time.time(), 'list_item': list_item}
-            self.list_of_nodes.addItem(self.node_list[ip]['list_item'])
+    def add_node(self, unicast, ip, mac):
+
+        list_ID = str('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
+        if list_ID in self.node_list:
+            print('already in there')
+            self.node_list[list_ID]['last_timestamp'] = time.time()
+            self.node_list[list_ID]['is_active'] = True
+            self.node_list[list_ID]['list_item'].setForeground(self.active_node_color)
+            if self.selected_item == list_ID:
+                self.is_init_frame.setEnabled(True)
+
+        else:
+            list_item = QtWidgets.QListWidgetItem(list_ID)
+            list_item.setForeground(self.active_node_color)
+
+            self.node_list[list_ID] = {'ip': ip, 'Mac': mac, 'Uni': unicast, 'last_timestamp': time.time(), 'list_item': list_item, 'selector_idx': self.node_count, 'is_active': True}
+            self.list_of_nodes.addItem(self.node_list[list_ID]['list_item'])
+            self.node_count += 1
         print(self.node_list)
 
     def node_timeout_check(self):
-        unactive_node_color = QtGui.QBrush(QtGui.QColor("#ff1500"))
         timestamp = time.time()
         for node_ip in self.node_list:
             if (timestamp - self.node_list[node_ip]['last_timestamp']) > 5:
-                self.node_list[node_ip]['list_item'].setForeground(unactive_node_color)
-                print('her')
+                self.node_list[node_ip]['list_item'].setForeground(self.unactive_node_color)
+                self.node_list[node_ip]['is_active'] = False
+                print(self.selected_item)
+                print(node_ip)
+                if self.selected_item == node_ip:
+                    self.is_init_frame.setEnabled(False)
+                    print('node_timeout_check FALSE')
 
+    def on_item_changed(self, curr, prev):
+
+            self.selected_item = curr.text()
+            self.list_of_nodes.setCurrentItem(self.node_list[self.selected_item]['list_item'])
+            if self.node_list[self.selected_item]['is_active']:
+                self.is_init_frame.setEnabled(True)
+                print('change item TRUE')
+            else:
+                self.is_init_frame.setEnabled(False)
+                print('change item FALSE')
 
 if __name__ == "__main__":
     import sys
@@ -164,12 +195,20 @@ if __name__ == "__main__":
     timer.timeout.connect(ui.node_timeout_check)
     timer.start(5000)
 
-    ui.init_btn.clicked.connect(legg_hain_t)
+    ui.sync_line_start_btn.clicked.connect(legg_hain_t)
 
     ui.add_node('3', '10.0.0.1', 'FFFF')
+    ui.add_node('3', '10.0.0.2', 'FFFF')
+
+    ui.is_init_frame.setEnabled(False)
+    # ui.list_of_nodes.currentItemChanged.connect(on_item_changed)
+    # ui.time_sync_selector.clear()
+    # ui.time_sync_selector.insertItem(0, 'anders')
+    # ui.time_sync_selector.insertItem(6, 'erik')
+    # ui.time_sync_selector.insertItem(2, 'martin')
+
+
 
     main_widget.show()
     sys.exit(app.exec_())
 
-    time.sleep(6)
-    ui.add_node('3', '10.0.0.2', 'FFFF')

@@ -67,10 +67,10 @@ if __name__ == "__main__":
     #Enable/Disable button
     #ui.pushButton.setEnabled(False)tutorial
 
-    dict_test = dict()
-    dict_test['a'] = {'ip': '1', 'Mac': '2', 'Uni': 3}
-    dict_test['b'] = {'ip': '1', 'Mac': '2', 'Uni': 3}
-    print(dict_test)
+    # dict_test = dict()
+    # dict_test['a'] = {'ip': '1', 'Mac': '2', 'Uni': 3}
+    # dict_test['b'] = {'ip': '1', 'Mac': '2', 'Uni': 3}
+    # print(dict_test)
 
     Form.show()
     sys.exit(app.exec_())
