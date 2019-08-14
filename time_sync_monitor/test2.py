@@ -5,45 +5,11 @@
 # Created by: PyQt5 UI code generator 5.12.3
 #
 # WARNING! All changes made in this file will be lost!
+import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import time
-import socket
-import json
-import pyqtgraph as pg
-
-
-def legg_hain_t():
-    ui.add_node('3', '10.0.0.1', 'FFFF')
-
-
-def sniff_for_packet():
-    segnal = QtCore.Signal(int, int, object)
-    while True:
-        # Loads the incoming data into a json format
-        raw_data, addr = listenSocket.recvfrom(1024)
-        print(raw_data)
-        # data = json.loads(raw_data)
-        print('Heifaderuttan')
-        # ip = addr[0]
-        segnal.emit(5, 5, 5)
-
-
-class WorkThread(QtCore.QThread):
-
-    # signal_test = QtCore.Signal(int, int, object)
-
-    def __init__(self, run_function, parent=None):
-        super(WorkThread, self).__init__(parent)
-        self.run_function = run_function
-
-    def run(self):
-        if callable(self.run_function):
-            self.run_function()
-
-        # while True:
-        #     print("PEKKALA")
-        #     time.sleep(1)
+import ethernetcomm
 
 class Ui_main_widget(object):
 
@@ -144,6 +110,7 @@ class Ui_main_widget(object):
         self.is_init_frame = QtWidgets.QFrame()
         self.is_init_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.is_init_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.is_init_frame.setEnabled(False)
         self.is_init_frame.setObjectName("is_init_frame")
         self.is_init_frame_layout = QtWidgets.QVBoxLayout(self.is_init_frame)
         self.is_init_frame_layout.setObjectName("is_init_frame_layout")
@@ -162,15 +129,8 @@ class Ui_main_widget(object):
         self.main_layout.addWidget(self.is_init_frame)
         self.main_layout.addWidget(self.init_btn)
 
-        self.plot = pg.PlotWidget()
-        self.main_layout.addWidget(self.plot)
-
-
-        QtCore.QMetaObject.connectSlotsByName(main_widget)
-
         # --- Connect widgets ---
         self.list_of_nodes.currentItemChanged.connect(self.on_item_changed)
-        self.init_btn.clicked.connect(legg_hain_t)
 
     def add_node(self, unicast, ip, mac):
         list_ID = str('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
@@ -206,7 +166,6 @@ class Ui_main_widget(object):
                 self.is_init_frame.setEnabled(False)
 
 if __name__ == "__main__":
-    import sys
     app = QtWidgets.QApplication(sys.argv)
     main_widget = QtWidgets.QWidget()
     ui = Ui_main_widget()
@@ -216,22 +175,9 @@ if __name__ == "__main__":
     timer.timeout.connect(ui.node_timeout_check)
     timer.start(5000)
 
-    ui.sync_line_start_btn.clicked.connect(legg_hain_t)
+    ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 10000)
+    ethernet.incoming_ethernet_data_sig.connect(ui.add_node)
 
-    ui.add_node('3', '10.0.0.1', 'FFFF')
-    ui.add_node('3', '10.0.0.2', 'FFFF')
-
-    ui.is_init_frame.setEnabled(False)
-
-    # --- Ethernet listener ---
-    LISTEN_IP = "0.0.0.0"
-    LISTEN_PORT = 11005
-    listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    listenSocket.bind((LISTEN_IP, LISTEN_PORT))
-
-
-    thread = WorkThread(sniff_for_packet)
-    thread.start()
 
     main_widget.show()
     sys.exit(app.exec_())
