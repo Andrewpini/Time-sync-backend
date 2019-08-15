@@ -35,6 +35,7 @@ class Ui_main_widget(object):
 
     def add_node(self, unicast, ip, mac):
         list_ID = str('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
+        print(list_ID)
         if list_ID in self.node_list:
             self.node_list[list_ID]['last_timestamp'] = time.time()
             self.node_list[list_ID]['is_active'] = True
