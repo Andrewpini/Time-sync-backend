@@ -11,6 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 import ethernetcomm
 import ctrlpanelwidget
+import ethernetmsg
 
 
 class Ui_main_widget(object):
@@ -23,7 +24,7 @@ class Ui_main_widget(object):
         self.unactive_node_color = QtGui.QBrush(QtGui.QColor("#ff1500"))
         self.cpw = ctrlpanelwidget.CtrlPanelWidget(main_widget)
         self.connect_widgets()
-        self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 10000)
+        self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11003, "255.255.255.255", 10000)
         self.ethernet.incoming_ethernet_data_sig.connect(self.add_node)
 
     def connect_widgets(self):
@@ -33,21 +34,30 @@ class Ui_main_widget(object):
         self.cpw.sync_line_start_btn.clicked.connect(lambda: self.send_btn_msg(('Sync Start Start').encode()))
         self.cpw.sync_line_stop_btn.clicked.connect(lambda: self.send_btn_msg(('Sync Line Stop').encode()))
 
-    def add_node(self, unicast, ip, mac):
-        list_ID = str('IP: ' + ip + ' | ' + 'MAC: ' + mac + ' | ' + 'Unicast: ' + unicast)
-        print(list_ID)
-        if list_ID in self.node_list:
-            self.node_list[list_ID]['last_timestamp'] = time.time()
-            self.node_list[list_ID]['is_active'] = True
-            self.node_list[list_ID]['list_item'].setForeground(self.active_node_color)
-            if self.selected_item == list_ID:
-                self.cpw.is_init_frame.setEnabled(True)
-        else:
-            list_item = QtWidgets.QListWidgetItem(list_ID)
-            list_item.setForeground(self.active_node_color)
-            self.node_list[list_ID] = {'ip': ip, 'Mac': mac, 'Uni': unicast, 'last_timestamp': time.time(), 'list_item': list_item, 'selector_idx': self.node_count, 'is_active': True}
-            self.cpw.list_of_nodes.addItem(self.node_list[list_ID]['list_item'])
-            self.node_count += 1
+    def add_node(self, raw_data):
+        print(raw_data)
+        opcode = ethernetmsg.Message.get_opcode(raw_data)
+        # print(opcode
+        msg = ethernetmsg.Message.get(raw_data)
+        if isinstance(msg, ethernetmsg.IAmAliveMsg):
+            print(msg.opcode)
+            print(msg.IP)
+            msg.IP
+        # if msg.opcode == -1:
+        #     list_ID = str('IP: ' + str(msg.IP) + ' | ' + 'MAC: ' + str(msg.mac) + ' | ' + 'Unicast: ' + str(msg.element_addr))
+        #     print(list_ID)
+        #     if list_ID in self.node_list:
+        #         self.node_list[list_ID]['last_timestamp'] = time.time()
+        #         self.node_list[list_ID]['is_active'] = True
+        #         self.node_list[list_ID]['list_item'].setForeground(self.active_node_color)
+        #         if self.selected_item == list_ID:
+        #             self.cpw.is_init_frame.setEnabled(True)
+        #     else:
+        #         list_item = QtWidgets.QListWidgetItem(list_ID)
+        #         list_item.setForeground(self.active_node_color)
+        #         self.node_list[list_ID] = {'ip': msg.IP, 'Mac': msg.mac, 'Uni': 0, 'last_timestamp': time.time(), 'list_item': list_item, 'selector_idx': self.node_count, 'is_active': True}
+        #         self.cpw.list_of_nodes.addItem(self.node_list[list_ID]['list_item'])
+        #         self.node_count += 1
 
     def node_timeout_check(self):
         timestamp = time.time()
@@ -79,6 +89,7 @@ if __name__ == "__main__":
     timer = QtCore.QTimer()
     timer.timeout.connect(ui.node_timeout_check)
     timer.start(5000)
+    print(ui.node_list)
 
     main_widget.show()
     sys.exit(app.exec_())
