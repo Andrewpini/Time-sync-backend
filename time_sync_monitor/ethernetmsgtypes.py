@@ -27,4 +27,5 @@ class ElementAddr:
         return self.value
 
     def __str__(self):
-        return '0X%04X' % self.value
+        return '0x%04X' % self.value
+

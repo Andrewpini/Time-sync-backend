@@ -1,10 +1,10 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import socket
-
+from ethernetmsg import *
 
 class EthernetCommunicationThread(QtCore.QThread):
 
-    incoming_ethernet_data_sig = QtCore.pyqtSignal(bytes)
+    incoming_ethernet_data_sig = QtCore.pyqtSignal(object)
 
     def __init__(self, listen_ip, listen_port, broadcast_ip, broadcast_port, parent=None):
         super(EthernetCommunicationThread, self).__init__(parent)
@@ -18,7 +18,7 @@ class EthernetCommunicationThread(QtCore.QThread):
         self.broadcast_port = broadcast_port
 
         self.handlers = {
-            'IAmAlive': EthernetCommunicationThread.handle_iamalive,
+            'IAmAlive': {'type': IAmAliveMsg, 'handler': self.handle_iamalive},
         }
 
         self.start()
@@ -29,15 +29,15 @@ class EthernetCommunicationThread(QtCore.QThread):
             self.incoming_data_handler()
 
     def handle_iamalive(self, msg):
-        pass
+        self.incoming_ethernet_data_sig.emit(msg)
+
 
     def incoming_data_handler(self):
         raw_data, addr = self.reciver_sock.recvfrom(1024)  # buffer size is 1024 bytes
-        # self.incoming_ethernet_data_sig.emit(b'\xce\xfa\xad\xde\xef\xb0\x95U;\x94\xa4\n\x00\x00\x0b')
         msg = Message.get(raw_data)
         for msgType, handler in self.handlers.items():
-            if isinstance(msg, msgType):
-                handler(self, msg)
+            if isinstance(msg, handler['type']):
+                handler['handler'](msg)
                 break
         else:
             print("no handlers for " + msg.opcode)
@@ -46,4 +46,5 @@ class EthernetCommunicationThread(QtCore.QThread):
 
     def broadcast_data(self, encoded_data):
         self.broadcast_sock.sendto(encoded_data, (self.broadcast_ip, self.broadcast_port))
+
 
