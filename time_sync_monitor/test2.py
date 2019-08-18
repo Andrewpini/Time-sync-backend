@@ -72,22 +72,25 @@ class Ui_main_widget(object):
             self.cpw.is_init_frame.setEnabled(False)
 
     def send_sync_line_start_msg(self):
-        self.ethernet.broadcast_data(struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 12]), 0x4))
+        ting = ethernetmsg.IAmAliveMsg().get_packed_msg()
+        self.ethernet.broadcast_data(ting)
         self.cpw.sync_line_label.setText('Starting - Waiting for response from node %s' % self.node_list[self.selected_item]['ip'])
         self.current_sync_line_node = self.node_list[self.selected_item]['ip']
 
     def send_sync_line_stop_msg(self):
-        self.ethernet.broadcast_data(struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 12]), 0x4))
+        ting = ethernetmsg.StartSyncLineMsg().get_packed_msg([1,1,1,1,1,1])
+        self.ethernet.broadcast_data(ting)
         self.cpw.sync_line_label.setText('Stopping - Waiting for response from node %s' % self.current_sync_line_node)
 
-
     def send_time_sync_start_msg(self):
-        self.ethernet.broadcast_data(struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 12]), 0x4))
+        ting = ethernetmsg.StartSyncLineAckMsg().get_packed_msg([1,1,1,1,1,1])
+        self.ethernet.broadcast_data(ting)
         self.cpw.time_sync_label.setText('Starting - Waiting for response from node %s' % self.node_list[self.selected_item]['ip'])
         self.current_time_sync_node = self.node_list[self.selected_item]['ip']
 
     def send_time_sync_stop_msg(self):
-        self.ethernet.broadcast_data(struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 12]), 0x4))
+        ting = ethernetmsg.StopSyncLineMsg().get_packed_msg([1,1,1,1,1,1])
+        self.ethernet.broadcast_data(ting)
         self.cpw.time_sync_label.setText('Stopping - Waiting for response from node %s' % self.current_time_sync_node)
 
 

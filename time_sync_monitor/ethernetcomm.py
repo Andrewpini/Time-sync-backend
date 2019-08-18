@@ -19,6 +19,14 @@ class EthernetCommunicationThread(QtCore.QThread):
 
         self.handlers = {
             'IAmAlive': {'type': IAmAliveMsg, 'handler': self.handle_iamalive},
+            'StartSyncLine': {'type': StartSyncLineMsg, 'handler': self.handle_start_sync_line},
+            'StopSyncLine': {'type': StopSyncLineMsg, 'handler': self.handle_stop_sync_line},
+            'StartTimeSync': {'type': StartTimeSyncMsg, 'handler': self.handle_start_time_sync},
+            'StopTimeSync': {'type': StopTimeSyncMsg, 'handler': self.handle_stop_time_sync},
+            'StartSyncLineAck': {'type': StartSyncLineAckMsg, 'handler': self.handle_start_sync_line_ack},
+            'StopSyncLineAck': {'type': StopSyncLineAckMsg, 'handler': self.handle_stop_sync_line_ack},
+            'StartTimeSyncAck': {'type': StartTimeSyncAckMsg, 'handler': self.handle_start_time_sync_ack},
+            'StopTimeSyncAck': {'type': StopTimeSyncAckMsg, 'handler': self.handle_stop_time_sync_ack},
         }
 
         self.start()
@@ -31,6 +39,29 @@ class EthernetCommunicationThread(QtCore.QThread):
     def handle_iamalive(self, msg):
         self.incoming_ethernet_data_sig.emit(msg)
 
+    def handle_start_sync_line(self, msg):
+        print('STARTER TIMESYNC LINJE')
+
+    def handle_stop_sync_line(self, msg):
+        print('STOPPER TIMESYNC LINJE')
+
+    def handle_start_time_sync(self, msg):
+        print('STARTER TIMESYNC')
+
+    def handle_stop_time_sync(self, msg):
+        print('STOPPER TIMESYNC')
+
+    def handle_start_sync_line_ack(self, msg):
+        print('ACK1')
+
+    def handle_stop_sync_line_ack(self, msg):
+        print('ACK2')
+
+    def handle_start_time_sync_ack(self, msg):
+        print('ACK3')
+
+    def handle_stop_time_sync_ack(self, msg):
+        print('ACK4')
 
     def incoming_data_handler(self):
         raw_data, addr = self.reciver_sock.recvfrom(1024)  # buffer size is 1024 bytes
