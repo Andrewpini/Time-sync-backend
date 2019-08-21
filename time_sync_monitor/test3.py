@@ -1,18 +1,42 @@
-import ethernetcomm
-import ethernetmsg
-import struct
-import socket
-import uuid
+#!/usr/bin/env python3
 
-# printing the value of unique MAC
-# address using uuid and getnode() function
-print(hex(uuid.getnode()))
+import sys
+from ctypes import c_int8, c_uint8, c_byte, c_ubyte, c_int16, c_uint16, \
+    c_int32, c_uint32, c_int, c_uint, c_long, c_ulong, c_longlong, c_ulonglong, \
+    c_int64, c_uint64, \
+    sizeof
 
-asd = struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 11]), 0x4)
-print(asd)
 
-ip = socket.gethostbyname_ex(socket.gethostname())
-#mac = socket.get
-print(ip)
-#b'\xce\xfa\xad\xde\xff\xb0\x95U;\x94\xa4\n\x00\x00\x0b\x04\x00'
-#'=Ib6s4sh'
+def limits(c_int_type):
+    signed = c_int_type(-1).value < c_int_type(0).value
+    bit_size = sizeof(c_int_type) * 8
+    signed_limit = 2 ** (bit_size - 1)
+    return (-signed_limit, signed_limit - 1) if signed else (0, 2 * signed_limit - 1)
+
+
+def main():
+    test_types = [
+        c_int8,
+        c_uint8,
+        c_byte,
+        c_ubyte,
+        c_int16,
+        c_uint16,
+        c_int32,
+        c_uint32,
+        c_int,
+        c_uint,
+        c_long,
+        c_ulong,
+        c_longlong,
+        c_ulonglong,
+        c_int64,
+        c_uint64
+    ]
+    for test_type in test_types:
+        print("{:s} limits: ({:d}, {:d})".format(test_type.__name__, *limits(test_type)))
+
+
+if __name__ == "__main__":
+    print("Python {:s} on {:s}\n".format(sys.version, sys.platform))
+    main()

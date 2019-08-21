@@ -10,6 +10,7 @@ import json
 import random
 import pandas as pd
 import os
+from struct import *
 
 
 class CurveObj:
@@ -81,7 +82,11 @@ def sniff_for_packet():
     try:
         # Loads the incoming data into a json format
         raw_data, addr = listenSocket.recvfrom(1024)
-        data = json.loads(raw_data)
+        # print(raw_data)
+        data = unpack_from('=IB6sII', raw_data, 0)
+        #'=Ib6sII'
+        print(data)
+        # data = json.loads(raw_data)
         ip = addr[0]
 
         # Gets the computer clock for the moment the data sample is recived
@@ -89,8 +94,10 @@ def sniff_for_packet():
         local_time = datetime.datetime.now()
         local_time = local_time.strftime("%H:%M:%S")
 
-        event_id = data['timetic']
-        timestamp = data['drift']
+        # event_id = data['timetic']
+        # timestamp = data['drift']
+        event_id = data[3]
+        timestamp = data[4]
 
         if ip in active_nodes:
             print('already in there')
@@ -149,7 +156,7 @@ def main(argv):
 
 
 LISTEN_IP = "0.0.0.0"
-LISTEN_PORT = 11001
+LISTEN_PORT = 11003
 TIMER_MAX_VAL = 1000000
 RAW_DATA_DIR_NAME = "./raw_data_sets/"
 REFINED_DATA_DIR_NAME = "./refined_data_sets/"
