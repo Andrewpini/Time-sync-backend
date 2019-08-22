@@ -9,8 +9,10 @@ OPCODES = {
     'StopSyncLineMsg': 0x31,
     'StartTimeSyncMsg': 0x40,
     'StopTimeSyncMsg': 0x41,
-    'ResetAllNodesMsg': 0x01,
+    'ResetMsg': 0x01,
     'AckMsg': 0x52,
+    'LedMsg': 0x20,
+    'DfuMsg': 0x11,
 }
 
 
@@ -53,6 +55,12 @@ class Message:
             return StopTimeSyncMsg(raw_data)
         elif msg.opcode == OPCODES['AckMsg']:
             return AckMsg(raw_data)
+        elif msg.opcode == OPCODES['LedMsg']:
+            return LedMsg(raw_data)
+        elif msg.opcode == OPCODES['DfuMsg']:
+            return DfuMsg(raw_data)
+        elif msg.opcode == OPCODES['ResetMsg']:
+            return ResetMsg(raw_data)
         else:
             return None
 
@@ -96,6 +104,7 @@ class SimpleSignalMsg(Message):
         header = self.pack_header()
         msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr), TID)
         return header + msg
+
 
 class IAmAliveMsg(Message):
     MESSAGE_FORMAT = '=4sh'
@@ -185,3 +194,94 @@ class AckMsg(Message):
         header = self.pack_header()
         msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr), TID, ack_opcode)
         return header + msg
+
+
+class LedMsg(Message):
+    MESSAGE_FORMAT = '=??6s'
+
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
+        self.ack_opcode = None
+        # Creating a outgoing message
+        if raw_data is None:
+            self.opcode = OPCODES['LedMsg']
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.is_broadcast, self.on_off, self.sender_mac_addr) = unpack_from(LedMsg.MESSAGE_FORMAT, payload, 0)
+            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
+        except:
+            self.sender_mac_addr = None
+
+    def get_packed_msg(self, is_broadcast, on_off, reciever_addr=0):
+        if is_broadcast:
+            target_addr = 0
+        else:
+            target_addr = reciever_addr
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, is_broadcast, on_off, bytes(target_addr))
+        return header + msg
+
+class DfuMsg(Message):
+    MESSAGE_FORMAT = '=?6s'
+
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
+        # Creating a outgoing message
+        if raw_data is None:
+            self.opcode = OPCODES['DfuMsg']
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.is_broadcast, self.sender_mac_addr) = unpack_from(self.MESSAGE_FORMAT, payload, 0)
+            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
+        except:
+            self.sender_mac_addr = None
+
+    def get_packed_msg(self, is_broadcast, reciever_addr=0):
+        if is_broadcast:
+            target_addr = 0
+        else:
+            target_addr = reciever_addr
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, is_broadcast, bytes(target_addr))
+        return header + msg
+
+
+class ResetMsg(Message):
+    MESSAGE_FORMAT = '=?6s'
+
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
+        # Creating a outgoing message
+        if raw_data is None:
+            self.opcode = OPCODES['ResetMsg']
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.is_broadcast, self.sender_mac_addr) = unpack_from(self.MESSAGE_FORMAT, payload, 0)
+            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
+        except:
+            self.sender_mac_addr = None
+
+    def get_packed_msg(self, is_broadcast, reciever_addr=0):
+        if is_broadcast:
+            target_addr = 0
+        else:
+            target_addr = reciever_addr
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, is_broadcast, bytes(target_addr))
+        return header + msg
+

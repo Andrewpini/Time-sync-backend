@@ -10,8 +10,10 @@ class EthernetCommunicationThread(QtCore.QThread):
     sig_stop_sync_line = QtCore.pyqtSignal(object)
     sig_start_time_sync = QtCore.pyqtSignal(object)
     sig_stop_time_sync = QtCore.pyqtSignal(object)
-    sig_reset_all_nodes = QtCore.pyqtSignal(object)
+    sig_reset_msg = QtCore.pyqtSignal(object)
     sig_ack_msg = QtCore.pyqtSignal(object)
+    sig_led_msg = QtCore.pyqtSignal(object)
+    sig_dfu_msg = QtCore.pyqtSignal(object)
 
     def __init__(self, listen_ip, listen_port, broadcast_ip, broadcast_port, parent=None):
         super(EthernetCommunicationThread, self).__init__(parent)
@@ -29,8 +31,10 @@ class EthernetCommunicationThread(QtCore.QThread):
             'StopSyncLine': {'type': StopSyncLineMsg, 'handler': self.handle_stop_sync_line},
             'StartTimeSync': {'type': StartTimeSyncMsg, 'handler': self.handle_start_time_sync},
             'StopTimeSync': {'type': StopTimeSyncMsg, 'handler': self.handle_stop_time_sync},
-            'ResetAllNodes': {'type': ResetAllNodesMsg, 'handler': self.handle_reset_all_nodes},
+            'ResetMsg': {'type': ResetMsg, 'handler': self.handle_reset_msg},
             'AckMsg': {'type': AckMsg, 'handler': self.handle_ack_msg},
+            'LedMsg': {'type': LedMsg, 'handler': self.handle_led_msg},
+            'DfuMsg': {'type': DfuMsg, 'handler': self.handle_dfu_msg},
         }
 
         self.start()
@@ -73,11 +77,17 @@ class EthernetCommunicationThread(QtCore.QThread):
     def handle_stop_time_sync(self, msg):
         self.sig_stop_time_sync.emit(msg)
 
-    def handle_reset_all_nodes(self, msg):
-        self.sig_reset_all_nodes.emit(msg)
+    def handle_reset_msg(self, msg):
+        self.sig_reset_msg.emit(msg)
 
     def handle_ack_msg(self, msg):
         self.sig_ack_msg.emit(msg)
+
+    def handle_led_msg(self, msg):
+        self.sig_led_msg.emit(msg)
+
+    def handle_dfu_msg(self, msg):
+        self.sig_dfu_msg.emit(msg)
 
 
 

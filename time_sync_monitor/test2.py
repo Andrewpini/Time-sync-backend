@@ -53,9 +53,14 @@ class Ui_main_widget(object):
         self.cpw.time_sync_stop_btn.clicked.connect(self.send_time_sync_stop_msg)
         self.cpw.sync_line_start_btn.clicked.connect(self.send_sync_line_start_msg)
         self.cpw.sync_line_stop_btn.clicked.connect(self.send_sync_line_stop_msg)
-        self.cpw.init_btn.clicked.connect(lambda: self.ethernet.broadcast_data(struct.pack('=Ib6s4sh', 0xDEADFACE, -1, bytes([0xB0, 0x95, 0x55, 0x3B, 0x94, 0xA4]), bytes([10, 0, 0, 11]), 0x4)))
-        self.cpw.reset_btn.clicked.connect(self.send_reset_all_nodes_msg)
-
+        self.cpw.led_on_btn.clicked.connect(lambda: self.send_led_msg(False, True, self.node_list[self.selected_item]['Mac']))
+        self.cpw.led_off_btn.clicked.connect(lambda: self.send_led_msg(False, False, self.node_list[self.selected_item]['Mac']))
+        self.cpw.led_all_on_btn.clicked.connect(lambda: self.send_led_msg(True, True, None))
+        self.cpw.led_all_off_btn.clicked.connect(lambda: self.send_led_msg(True, False, None))
+        self.cpw.dfu_single_btn.clicked.connect(lambda: self.send_dfu_msg(False, self.node_list[self.selected_item]['Mac']))
+        self.cpw.dfu_all_btn.clicked.connect(lambda: self.send_dfu_msg(True, None))
+        self.cpw.reset_btn.clicked.connect(lambda: self.send_reset_msg(False, self.node_list[self.selected_item]['Mac']))
+        self.cpw.reset_all_btn.clicked.connect(lambda: self.send_reset_msg(True, None))
 
     def add_node(self, msg):
         if msg.ID_string in self.node_list:
@@ -63,7 +68,7 @@ class Ui_main_widget(object):
             self.node_list[msg.ID_string]['is_active'] = True
             self.node_list[msg.ID_string]['list_item'].setForeground(self.active_node_color)
             if self.selected_item == msg.ID_string:
-                self.cpw.is_init_frame.setEnabled(True)
+                self.cpw.set_clickable_widgets(True)
         else:
             list_item = QtWidgets.QListWidgetItem(msg.ID_string)
             list_item.setForeground(self.active_node_color)
@@ -78,15 +83,15 @@ class Ui_main_widget(object):
                 self.node_list[node_ip]['list_item'].setForeground(self.unactive_node_color)
                 self.node_list[node_ip]['is_active'] = False
                 if self.selected_item == node_ip:
-                    self.cpw.is_init_frame.setEnabled(False)
+                    self.cpw.set_clickable_widgets(False)
 
     def on_item_changed(self, curr, prev):
         self.selected_item = curr.text()
         self.cpw.list_of_nodes.setCurrentItem(self.node_list[self.selected_item]['list_item'])
         if self.node_list[self.selected_item]['is_active']:
-            self.cpw.is_init_frame.setEnabled(True)
+            self.cpw.set_clickable_widgets(True)
         else:
-            self.cpw.is_init_frame.setEnabled(False)
+            self.cpw.set_clickable_widgets(False)
 
     def send_sync_line_start_msg(self):
         self.current_TID = create_random_TID()
@@ -114,8 +119,16 @@ class Ui_main_widget(object):
         self.ethernet.broadcast_data(ting)
         self.cpw.time_sync_label.setText('Stopping - Waiting for response from node %s' % self.current_time_sync_node)
 
-    def send_reset_all_nodes_msg(self):
-        ting = ResetAllNodesMsg().get_packed_msg()
+    def send_led_msg(self, is_broadcast, on_off, target_addr):
+        ting = LedMsg().get_packed_msg(is_broadcast, on_off, target_addr)
+        self.ethernet.broadcast_data(ting)
+
+    def send_dfu_msg(self, is_broadcast, target_addr):
+        ting = DfuMsg().get_packed_msg(is_broadcast, target_addr)
+        self.ethernet.broadcast_data(ting)
+
+    def send_reset_msg(self, is_broadcast, target_addr):
+        ting = ResetMsg().get_packed_msg(is_broadcast, target_addr)
         self.ethernet.broadcast_data(ting)
 
     def handle_ack_msg(self, msg):
