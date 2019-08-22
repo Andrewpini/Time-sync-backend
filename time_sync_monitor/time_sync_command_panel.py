@@ -38,13 +38,15 @@ class Ui_main_widget(object):
 
         # Create ethernet communication instance and connect signals to corresponding handlers
         # self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11111, "255.255.255.255", 11111)
-        self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 10000)
+        # self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 10000)
+        self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 11001)
+
 
         self.ethernet.sig_i_am_alive.connect(self.add_node)
-        # self.ethernet.sig_start_time_sync.connect(self.handle_foo)
-        # self.ethernet.sig_stop_time_sync.connect(self.handle_foo)
-        # self.ethernet.sig_start_sync_line.connect(self.handle_foo)
-        # self.ethernet.sig_stop_sync_line.connect(self.handle_foo)
+        self.ethernet.sig_start_time_sync.connect(self.handle_foo)
+        self.ethernet.sig_stop_time_sync.connect(self.handle_foo)
+        self.ethernet.sig_start_sync_line.connect(self.handle_foo)
+        self.ethernet.sig_stop_sync_line.connect(self.handle_foo)
         self.ethernet.sig_ack_msg.connect(self.handle_ack_msg)
 
     def connect_widgets(self):
@@ -99,6 +101,7 @@ class Ui_main_widget(object):
         self.ethernet.broadcast_data(ting)
         self.cpw.sync_line_label.setText('Starting - Waiting for response from node %s' % self.node_list[self.selected_item]['ip'])
         self.current_sync_line_node = self.node_list[self.selected_item]['ip']
+        print('asdfgasd')
 
     def send_sync_line_stop_msg(self):
         self.current_TID = create_random_TID()
@@ -132,6 +135,7 @@ class Ui_main_widget(object):
         self.ethernet.broadcast_data(ting)
 
     def handle_ack_msg(self, msg):
+        print(msg)
         if self.current_TID == msg.TID:
             if msg.ack_opcode == OPCODES['StartSyncLineMsg']:
                 self.cpw.sync_line_label.setText('Current sync line master is node %s' % msg.sender_mac_addr)
@@ -146,23 +150,11 @@ class Ui_main_widget(object):
                 self.cpw.time_sync_label.setText('Sync line was stopped by user')
                 pass
 
-    # def handle_foo(self, msg):
-    #     if msg.opcode == OPCODES['StartSyncLineMsg']:
-    #         ting = StartSyncLineAckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID)
-    #         self.ethernet.broadcast_data(ting)
-    #         pass
-    #     if msg.opcode == OPCODES['StopSyncLineMsg']:
-    #         ting = StopSyncLineAckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID)
-    #         self.ethernet.broadcast_data(ting)
-    #         pass
-    #     if msg.opcode == OPCODES['StartTimeSyncMsg']:
-    #         ting = StartTimeSyncAckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID)
-    #         self.ethernet.broadcast_data(ting)
-    #         pass
-    #     if msg.opcode == OPCODES['StopTimeSyncMsg']:
-    #         ting = StopTimeSyncAckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID)
-    #         self.ethernet.broadcast_data(ting)
-    #         pass
+    def handle_foo(self, msg):
+        print('asd')
+        ting = AckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID, msg.OPCODE)
+        self.ethernet.broadcast_data(ting)
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

@@ -27,46 +27,46 @@ def get_mac_addr():
 
 
 class Message:
-
+    OPCODE = int
     HEADER_FORMAT = '=Ib6s'
 
     def __init__(self, raw_data=None):
-        #Creating a outgoing message
+        # Creating a outgoing message
         if raw_data is None:
             self.identifier = IDENTIFIER
             self.mac = get_mac_addr()
-            self.opcode = None
-        #Parsing an incoming message
+            self.parsed_opcode = None
+        # Parsing an incoming message
         else:
             self.payload = self.parse_header(raw_data)
 
     @staticmethod
-    def get(raw_data): # factory pattern
+    def get(raw_data):  # factory pattern
         msg = Message(raw_data)
-        if msg.opcode == OPCODES['IAmAliveMsg']:
+        if msg.parsed_opcode == OPCODES['IAmAliveMsg']:
             return IAmAliveMsg(raw_data)
-        elif msg.opcode == OPCODES['StartSyncLineMsg']:
+        elif msg.parsed_opcode == OPCODES['StartSyncLineMsg']:
             return StartSyncLineMsg(raw_data)
-        elif msg.opcode == OPCODES['StopSyncLineMsg']:
+        elif msg.parsed_opcode == OPCODES['StopSyncLineMsg']:
             return StopSyncLineMsg(raw_data)
-        elif msg.opcode == OPCODES['StartTimeSyncMsg']:
+        elif msg.parsed_opcode == OPCODES['StartTimeSyncMsg']:
             return StartTimeSyncMsg(raw_data)
-        elif msg.opcode == OPCODES['StopTimeSyncMsg']:
+        elif msg.parsed_opcode == OPCODES['StopTimeSyncMsg']:
             return StopTimeSyncMsg(raw_data)
-        elif msg.opcode == OPCODES['AckMsg']:
+        elif msg.parsed_opcode == OPCODES['AckMsg']:
             return AckMsg(raw_data)
-        elif msg.opcode == OPCODES['LedMsg']:
+        elif msg.parsed_opcode == OPCODES['LedMsg']:
             return LedMsg(raw_data)
-        elif msg.opcode == OPCODES['DfuMsg']:
+        elif msg.parsed_opcode == OPCODES['DfuMsg']:
             return DfuMsg(raw_data)
-        elif msg.opcode == OPCODES['ResetMsg']:
+        elif msg.parsed_opcode == OPCODES['ResetMsg']:
             return ResetMsg(raw_data)
         else:
             return None
 
     def parse_header(self, raw_data):
         try:
-            (self.identifier, self.opcode, self.mac) = unpack_from(Message.HEADER_FORMAT, raw_data, 0)
+            (self.identifier, self.parsed_opcode, self.mac) = unpack_from(Message.HEADER_FORMAT, raw_data, 0)
             self.mac = MACAddr(self.mac)
             return raw_data[11:]
         except:
@@ -76,34 +76,7 @@ class Message:
             return None
 
     def pack_header(self):
-        return pack(Message.HEADER_FORMAT, self.identifier, self.opcode, bytes(self.mac))
-
-
-class SimpleSignalMsg(Message):
-    MESSAGE_FORMAT = '=6sI'
-    def __init__(self, opcode, raw_data=None):
-        super().__init__(raw_data)
-        #Creating a outgoing message
-        if raw_data is None:
-            self.opcode = opcode
-        #Parsing an incoming message
-        else:
-            self.sender_mac_addr = None
-            self.parse_msg(self.payload)
-
-    def parse_msg(self, payload):
-        try:
-            (self.sender_mac_addr, self.TID) = unpack_from(SimpleSignalMsg.MESSAGE_FORMAT, payload, 0)
-            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
-        except:
-            self.sender_mac_addr = None
-            self.TID = None
-
-    def get_packed_msg(self, reciever_addr, TID):
-        self.TID = TID
-        header = self.pack_header()
-        msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr), TID)
-        return header + msg
+        return pack(Message.HEADER_FORMAT, self.identifier, self.OPCODE, bytes(self.mac))
 
 
 class IAmAliveMsg(Message):
@@ -111,13 +84,13 @@ class IAmAliveMsg(Message):
 
     def __init__(self, raw_data=None):
         super().__init__(raw_data)
-        #Creating a outgoing message
+        # Creating a outgoing message
         if raw_data is None:
             self.opcode = OPCODES['IAmAliveMsg']
             #TODO: Comment out at some point
             self.IP = [4,5,2,7]
             self.element_addr = 0x1111
-        #Parsing an incoming message
+        # Parsing an incoming message
         else:
             self.parse_msg(self.payload)
             self.ID_string = "%s | %s | %s" % (self.IP, self.mac, self.element_addr)
@@ -137,9 +110,38 @@ class IAmAliveMsg(Message):
         return header + msg
 
 
-class StartSyncLineMsg(SimpleSignalMsg):
+class SimpleSignalMsg(Message):
+    MESSAGE_FORMAT = '=6sI'
+
     def __init__(self, raw_data=None):
-        super().__init__(OPCODES['StartSyncLineMsg'], raw_data)
+        super().__init__(raw_data)
+        # Creating a outgoing message
+        if raw_data is None:
+            pass
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.sender_mac_addr, self.TID) = unpack_from(SimpleSignalMsg.MESSAGE_FORMAT, payload, 0)
+            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
+        except:
+            self.sender_mac_addr = None
+            self.TID = None
+
+    def get_packed_msg(self, reciever_addr, TID):
+        self.TID = TID
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr), TID)
+        return header + msg
+
+
+class StartSyncLineMsg(SimpleSignalMsg):
+    OPCODE = 0x30
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
 
 
 class StopSyncLineMsg(SimpleSignalMsg):
@@ -168,6 +170,7 @@ class ResetAllNodesMsg(Message):
 
 
 class AckMsg(Message):
+    OPCODE = 0x52
     MESSAGE_FORMAT = '=6sIB'
 
     def __init__(self, raw_data=None):
