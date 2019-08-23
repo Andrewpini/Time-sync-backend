@@ -31,6 +31,10 @@ class CtrlPanelWidget(object):
         self.reset_btn.setText("Reset Selected Node")
         self.reset_all_btn = QtWidgets.QPushButton()
         self.reset_all_btn.setText("Reset All")
+        self.tx_pwr_btn = QtWidgets.QPushButton()
+        self.tx_pwr_btn.setText("Set Selected Node")
+        self.tx_pwr_all_btn = QtWidgets.QPushButton()
+        self.tx_pwr_all_btn.setText("Set All")
 
         # --- Create all lists ---
         self.list_of_nodes = QtWidgets.QListWidget()
@@ -44,8 +48,30 @@ class CtrlPanelWidget(object):
 
 
         # --- Create all combo boxes ---
-        self.sync_line_selector = QtWidgets.QComboBox()
-        self.time_sync_selector = QtWidgets.QComboBox()
+        self.tx_power_cbox = QtWidgets.QComboBox()
+        self.tx_power_cbox.addItem('8 Dbm')
+        self.tx_power_cbox.addItem('7 Dbm')
+        self.tx_power_cbox.addItem('6 Dbm')
+        self.tx_power_cbox.addItem('5 Dbm')
+        self.tx_power_cbox.addItem('4 Dbm')
+        self.tx_power_cbox.addItem('3 Dbm')
+        self.tx_power_cbox.addItem('2 Dbm')
+        self.tx_power_cbox.addItem('0 Dbm')
+        self.tx_power_cbox.addItem('-4 Dbm')
+        self.tx_power_cbox.addItem('-8 Dbm')
+        self.tx_power_cbox.addItem('-12 Dbm')
+        self.tx_power_cbox.addItem('-16 Dbm')
+        self.tx_power_cbox.addItem('-20 Dbm')
+        self.tx_power_cbox.addItem('-30 Dbm')
+        self.tx_power_cbox.addItem('-40 Dbm')
+
+
+
+        # ---  Create Available nodes group box ---
+        self.nodes_gbox = QtWidgets.QGroupBox()
+        self.nodes_gbox.setTitle("Available nodes")
+        self.nodes_gbox_layout = QtWidgets.QVBoxLayout(self.nodes_gbox)
+        self.nodes_gbox_layout.addWidget(self.list_of_nodes)
 
 
         #---  Create Syncronization line group box ---
@@ -93,6 +119,7 @@ class CtrlPanelWidget(object):
         self.dfu_btn_layout.addWidget(self.dfu_all_btn)
         self.dfu_gbox_layout.addLayout(self.dfu_btn_layout)
 
+
         # ---  Create Reset group box ---
         self.reset_gbox = QtWidgets.QGroupBox()
         self.reset_gbox.setTitle("Reset")
@@ -103,15 +130,19 @@ class CtrlPanelWidget(object):
         self.reset_gbox_layout.addLayout(self.reset_btn_layout)
 
 
-        # ---  Create Available nodes group box ---
-        self.nodes_gbox = QtWidgets.QGroupBox()
-        self.nodes_gbox.setTitle("Available nodes")
-        self.nodes_gbox_layout = QtWidgets.QVBoxLayout(self.nodes_gbox)
-        self.nodes_gbox_layout.addWidget(self.list_of_nodes)
+        # ---  Create Tx Power group box ---
+        self.tx_pwr_gbox = QtWidgets.QGroupBox()
+        self.tx_pwr_gbox.setTitle("Node Tx Power")
+        self.tx_pwr_gbox_layout = QtWidgets.QVBoxLayout(self.tx_pwr_gbox)
+        self.tx_pwr_btn_layout = QtWidgets.QHBoxLayout()
+        self.tx_pwr_btn_layout.addWidget(self.tx_pwr_btn)
+        self.tx_pwr_btn_layout.addWidget(self.tx_pwr_all_btn)
+        self.tx_pwr_gbox_layout.addWidget(self.tx_power_cbox)
+        self.tx_pwr_gbox_layout.addLayout(self.tx_pwr_btn_layout)
 
 
-        #--- Create main layout ---
-        main_widget.resize(332, 549)
+        # --- Create main layout ---
+        main_widget.resize(332, 700)
         main_widget.setWindowTitle("Command Panel")
         self.main_layout = QtWidgets.QVBoxLayout(main_widget)
         self.main_layout.addWidget(self.nodes_gbox)
@@ -120,6 +151,9 @@ class CtrlPanelWidget(object):
         self.main_layout.addWidget(self.led_gbox)
         self.main_layout.addWidget(self.dfu_gbox)
         self.main_layout.addWidget(self.reset_gbox)
+        self.main_layout.addWidget(self.tx_pwr_gbox)
+
+        # Makes sure that the right widgets are not clickable at initialization point
         self.set_clickable_widgets(False)
 
     def set_clickable_widgets(self, on_off):

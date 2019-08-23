@@ -61,6 +61,8 @@ class Ui_main_widget(object):
         self.cpw.dfu_all_btn.clicked.connect(lambda: self.send_dfu_msg(True, None))
         self.cpw.reset_btn.clicked.connect(lambda: self.send_reset_msg(False, self.node_list[self.selected_item]['Mac']))
         self.cpw.reset_all_btn.clicked.connect(lambda: self.send_reset_msg(True, None))
+        self.cpw.tx_pwr_btn.clicked.connect(lambda: self.send_tx_pwr_msg(False, self.node_list[self.selected_item]['Mac']))
+        self.cpw.tx_pwr_all_btn.clicked.connect(lambda: self.send_tx_pwr_msg(True, None))
 
     def add_node(self, msg):
         if msg.ID_string in self.node_list:
@@ -129,6 +131,10 @@ class Ui_main_widget(object):
 
     def send_reset_msg(self, is_broadcast, target_addr):
         ting = ResetMsg().get_packed_msg(is_broadcast, target_addr)
+        self.ethernet.broadcast_data(ting)
+
+    def send_tx_pwr_msg(self, is_broadcast, target_addr):
+        ting = TxPowerMsg().get_packed_msg(is_broadcast, self.cpw.tx_power_cbox.currentIndex(), target_addr)
         self.ethernet.broadcast_data(ting)
 
     def handle_ack_msg(self, msg):

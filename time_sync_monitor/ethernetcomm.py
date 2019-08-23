@@ -14,6 +14,7 @@ class EthernetCommunicationThread(QtCore.QThread):
     sig_ack_msg = QtCore.pyqtSignal(object)
     sig_led_msg = QtCore.pyqtSignal(object)
     sig_dfu_msg = QtCore.pyqtSignal(object)
+    sig_tx_power_msg = QtCore.pyqtSignal(object)
 
     def __init__(self, listen_ip, listen_port, broadcast_ip, broadcast_port, parent=None):
         super(EthernetCommunicationThread, self).__init__(parent)
@@ -35,6 +36,7 @@ class EthernetCommunicationThread(QtCore.QThread):
             'AckMsg': {'type': AckMsg, 'handler': self.handle_ack_msg},
             'LedMsg': {'type': LedMsg, 'handler': self.handle_led_msg},
             'DfuMsg': {'type': DfuMsg, 'handler': self.handle_dfu_msg},
+            'TxPowerMsg': {'type': TxPowerMsg, 'handler': self.handle_tx_power_msg},
         }
 
         self.start()
@@ -89,6 +91,8 @@ class EthernetCommunicationThread(QtCore.QThread):
     def handle_dfu_msg(self, msg):
         self.sig_dfu_msg.emit(msg)
 
+    def handle_tx_power_msg(self, msg):
+        self.sig_tx_power_msg.emit(msg)
 
 
 

@@ -13,6 +13,7 @@ OPCODES = {
     'AckMsg': 0x52,
     'LedMsg': 0x20,
     'DfuMsg': 0x11,
+    'TxPowerMsg': 0x55,
 }
 
 
@@ -283,5 +284,34 @@ class ResetMsg(Message):
             target_addr = reciever_addr
         header = self.pack_header()
         msg = pack(self.MESSAGE_FORMAT, is_broadcast, bytes(target_addr))
+        return header + msg
+
+class TxPowerMsg(Message):
+    MESSAGE_FORMAT = '=?B6s'
+
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
+        # Creating a outgoing message
+        if raw_data is None:
+            self.opcode = OPCODES['TxPowerMsg']
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.is_broadcast, self.sender_mac_addr, self.power_lvl) = unpack_from(self.MESSAGE_FORMAT, payload, 0)
+            self.sender_mac_addr = MACAddr(self.sender_mac_addr)
+        except:
+            self.sender_mac_addr = None
+
+    def get_packed_msg(self, is_broadcast, power_lvl, reciever_addr=0):
+        if is_broadcast:
+            target_addr = 0
+        else:
+            target_addr = reciever_addr
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, is_broadcast, power_lvl, bytes(target_addr))
         return header + msg
 

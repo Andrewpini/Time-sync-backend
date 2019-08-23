@@ -11,6 +11,7 @@ import random
 import pandas as pd
 import os
 from struct import *
+from test_av_sample_parser import *
 
 
 class CurveObj:
@@ -19,6 +20,11 @@ class CurveObj:
     buffer_x = object
     buffer_y = object
 
+
+def print_plot_data(nr, dicti):
+    print(nr)
+    print(dicti)
+    print('kråke')
 
 def refine_sync_data():
     df = pd.read_csv(raw_file_name)
@@ -85,7 +91,9 @@ def sniff_for_packet():
         # print(raw_data)
         data = unpack_from('=IB6sII', raw_data, 0)
         #'=Ib6sII'
-        print(data)
+        # print(data)
+        raw_data_packet = RawSample(data[3], addr[0], data[4])
+        parser.add_sample(raw_data_packet)
         # data = json.loads(raw_data)
         ip = addr[0]
 
@@ -100,8 +108,8 @@ def sniff_for_packet():
         timestamp = data[4]
 
         if ip in active_nodes:
-            print('already in there')
-
+            # print('already in there')
+            pass
         else:
             active_nodes[ip] = CurveObj()
             active_nodes[ip].curve = p1.plot(pen=create_semi_random_color(94, 255, 255), name=ip)
@@ -115,7 +123,7 @@ def sniff_for_packet():
             fieldnames = ["Local_time", 'Event_ID', 'Node', 'Timestamp']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             thisdict = {"Local_time": local_time, "Event_ID": event_id, "Node": ip, "Timestamp": timestamp}
-            print(thisdict)
+            # print(thisdict)
             writer.writerow(thisdict)
             csvfile.close()
 
@@ -206,6 +214,9 @@ timer.timeout.connect(sniff_for_packet)
 timer.start(25)
 timer.setInterval(25)
 
+#TODO: remove after testing
+parser = SampleParser(8, 3)
+parser.plot_signal.connect(print_plot_data)
 win.show()
 
 app.exec_()

@@ -17,7 +17,7 @@ class MACAddr:
         return self.value
 
     def __str__(self):
-        return '%X-%X-%X-%X-%X-%X' % tuple(self.value)
+        return '%02X-%02X-%02X-%02X-%02X-%02X' % tuple(self.value)
 
 class ElementAddr:
     def __init__(self, bytearray):
