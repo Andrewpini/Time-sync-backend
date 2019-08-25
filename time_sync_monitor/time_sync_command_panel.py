@@ -14,7 +14,7 @@ import ctrlpanelwidget
 from ethernetmsg import *
 import struct
 import random
-
+from test_av_sample_parser import *
 
 def create_random_TID():
     UINT32_MAX = 0xffffffff
@@ -35,6 +35,7 @@ class Ui_main_widget(object):
 
         self.cpw = ctrlpanelwidget.CtrlPanelWidget(main_widget)
         self.connect_widgets()
+        self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value())
 
         # Create ethernet communication instance and connect signals to corresponding handlers
         # self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11111, "255.255.255.255", 11111)
@@ -46,6 +47,8 @@ class Ui_main_widget(object):
         # self.ethernet.sig_start_sync_line.connect(self.handle_foo)
         # self.ethernet.sig_stop_sync_line.connect(self.handle_foo)
         self.ethernet.sig_ack_msg.connect(self.handle_ack_msg)
+
+
 
     def connect_widgets(self):
         self.cpw.list_of_nodes.currentItemChanged.connect(self.on_item_changed)
@@ -63,6 +66,9 @@ class Ui_main_widget(object):
         self.cpw.reset_all_btn.clicked.connect(lambda: self.send_reset_msg(True, None))
         self.cpw.tx_pwr_btn.clicked.connect(lambda: self.send_tx_pwr_msg(False, self.node_list[self.selected_item]['Mac']))
         self.cpw.tx_pwr_all_btn.clicked.connect(lambda: self.send_tx_pwr_msg(True, None))
+        self.cpw.tx_pwr_all_btn.clicked.connect(self.cpw.plot1.clear_entire_plot)
+        self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot2.set_partial_sampleset_cnt(self.cpw.horizontalSlider.value()))
+        self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value()))
 
     def add_node(self, msg):
         if msg.ID_string in self.node_list:
@@ -89,6 +95,7 @@ class Ui_main_widget(object):
 
     def on_item_changed(self, curr, prev):
         self.selected_item = curr.text()
+        # print(self.cpw.list_of_nodes.currentRow())
         self.cpw.list_of_nodes.setCurrentItem(self.node_list[self.selected_item]['list_item'])
         if self.node_list[self.selected_item]['is_active']:
             self.cpw.set_clickable_widgets(True)
@@ -152,6 +159,11 @@ class Ui_main_widget(object):
                 self.cpw.time_sync_label.setText('Sync line was stopped by user')
                 pass
 
+    def handle_slider_event(self):
+        slider_val = self.cpw.horizontalSlider.value()
+        self.cpw.plot2.set_partial_sampleset_cnt(slider_val)
+        self.cpw.plot_sample_label.setText('Samples shown: %d' % slider_val)
+
     # def handle_foo(self, msg):
     #     if msg.opcode == OPCODES['StartSyncLineMsg']:
     #         ting = StartSyncLineAckMsg().get_packed_msg(msg.sender_mac_addr, msg.TID)
@@ -170,14 +182,41 @@ class Ui_main_widget(object):
     #         self.ethernet.broadcast_data(ting)
     #         pass
 
+
+def foo(nr, dicti):
+    ui.cpw.plot1.add_plot_sample(nr, dicti)
+    ui.cpw.plot2.add_plot_sample(nr, dicti)
+
+def fuu():
+    global teller
+    parser.add_sample(RawSample(teller, 'gris', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'høne', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'hane', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'trost', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'trane', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'lama', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'kenguru', random.randint(0,50)))
+    parser.add_sample(RawSample(teller, 'dingo', random.randint(0,50)))
+    teller +=1
+
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     main_widget = QtWidgets.QWidget()
     ui = Ui_main_widget(main_widget)
 
+    teller = 0
+    parser = SampleParser(8, 3)
+    parser.plot_signal.connect(foo)
+    ui.cpw.plot1.change_sync_master('trane')
+    ui.cpw.plot2.change_sync_master('trane')
+
     timer = QtCore.QTimer()
     timer.timeout.connect(ui.node_timeout_check)
     timer.start(1000)
+
+    timer2 = QtCore.QTimer()
+    timer2.timeout.connect(fuu)
+    timer2.start(500)
 
     main_widget.show()
     sys.exit(app.exec_())
