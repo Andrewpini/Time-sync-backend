@@ -201,7 +201,7 @@ def fuu():
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    main_widget = QtWidgets.QWidget()
+    main_widget = QtWidgets.QMainWindow()
     ui = Ui_main_widget(main_widget)
 
     teller = 0

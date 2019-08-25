@@ -35,6 +35,7 @@ class Ui_MainWindow(object):
         self.dockWidget_2.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable | QtWidgets.QDockWidget.DockWidgetMovable)
         self.dockWidget_2.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
         self.dockWidget_2.setObjectName("dockWidget_2")
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWidget_2)
         self.dockWidgetContents_5 = QtWidgets.QWidget()
         self.dockWidgetContents_5.setObjectName("dockWidgetContents_5")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.dockWidgetContents_5)
@@ -43,7 +44,6 @@ class Ui_MainWindow(object):
         self.textEdit.setObjectName("textEdit")
         self.horizontalLayout.addWidget(self.textEdit)
         self.dockWidget_2.setWidget(self.dockWidgetContents_5)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(16), self.dockWidget_2)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

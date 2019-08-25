@@ -11,7 +11,15 @@ class PrefBtn(QtWidgets.QPushButton):
 
 class CtrlPanelWidget(object):
 
-    def __init__(self, main_widget):
+    def __init__(self, MainWindow):
+
+        # --- Create main layout ---
+        MainWindow.resize(1000, 700)
+        MainWindow.setWindowTitle("Command Panel")
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        MainWindow.setCentralWidget(self.centralwidget)
+
+
 
         #--- Create all buttons ---
         self.time_sync_stop_btn = PrefBtn("Stop")
@@ -169,7 +177,7 @@ class CtrlPanelWidget(object):
 
 
         # --- Create plot layout ---
-        self.plot_layout = QtWidgets.QVBoxLayout()
+        self.plot_layout = QtWidgets.QVBoxLayout(self.centralwidget)
         self.plot_layout.addWidget(self.plot1)
         self.plot_layout.addWidget(self.plot2)
         self.plot_layout.addWidget(self.plot_sample_label)
@@ -178,12 +186,12 @@ class CtrlPanelWidget(object):
         self.slider_layout.addItem(self.spacer)
         self.plot_layout.addLayout(self.slider_layout)
 
-        # --- Create main layout ---
-        main_widget.resize(1000, 700)
-        main_widget.setWindowTitle("Command Panel")
-        self.main_layout = QtWidgets.QHBoxLayout(main_widget)
-        self.main_layout.addWidget(self.ctrl_widget)
-        self.main_layout.addLayout(self.plot_layout)
+        self.ctrl_dock = QtWidgets.QDockWidget(MainWindow)
+        self.ctrl_dock.setWindowTitle('Controller')
+        self.ctrl_dock.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable | QtWidgets.QDockWidget.DockWidgetMovable)
+        self.ctrl_dock.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.ctrl_dock)
+        self.ctrl_dock.setWidget(self.ctrl_widget)
 
         # Makes sure that the right widgets are not clickable at initialization point
         self.set_clickable_widgets(False)
