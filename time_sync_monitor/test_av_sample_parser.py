@@ -67,7 +67,7 @@ class SampleParser(QtCore.QTimer):
         self.timeout_in_sec = timeout_in_sec
 
         self.timeout.connect(self.check_for_timeout)
-        self.start(1000)
+        self.start(3000)
 
     def add_sample(self, sample): # RawSampel class
         if sample.event_nr in self.entry_dict:
@@ -103,10 +103,10 @@ class SampleParser(QtCore.QTimer):
         for key, entry in self.entry_dict.items():
             time_since_creation = time_now - entry.timestamp
             if time_since_creation > self.timeout_in_sec:
-                print('Reached timeout for the cluster. Pushed to file')
+                print('Reached timeout for the cluster. Pushed to file (Commented out)')
                 keys_to_remove.append(key)
         for key in keys_to_remove:
-            self.push_cluster(key)
+            # self.push_cluster(key)
             self.remove_cluster(key)
 
 

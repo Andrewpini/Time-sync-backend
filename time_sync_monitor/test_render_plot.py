@@ -32,10 +32,21 @@ class CurveData(pyqtgraph.PlotCurveItem):
         self.setPen(color, width=1)
         self.list_length = 0
         self.partial_sample_cnt = 50
+
     def add_sample(self, x_axis_sample, y_axis_sample):
         self.list_length += 1
-        self.x_axis_data.append(x_axis_sample)
-        self.y_axis_data.append(y_axis_sample)
+        if not self.x_axis_data:
+            self.x_axis_data.append(x_axis_sample)
+            self.y_axis_data.append(y_axis_sample)
+        else:
+            for idx in range(len(self.x_axis_data)):
+                if x_axis_sample < self.x_axis_data[idx]:
+                    self.x_axis_data.insert(idx, x_axis_sample)
+                    self.y_axis_data.insert(idx, y_axis_sample)
+                    break
+                if idx == len(self.x_axis_data) - 1:
+                    self.x_axis_data.append(x_axis_sample)
+                    self.y_axis_data.append(y_axis_sample)
 
     def clear_curve(self):
         self.x_axis_data.clear()
@@ -58,8 +69,7 @@ class CurveData(pyqtgraph.PlotCurveItem):
 
 
 class TimeSyncPlot(pyqtgraph.PlotWidget):
-    #TODO: Fix this when done developing
-    UINT32T_MAX = 100#0xFFFFFFFF
+    UINT32T_MAX = 0xFFFFFFFF
     def __init__(self, plot_partial=False, parent=None):
         super(TimeSyncPlot, self).__init__(parent)
         self.current_sync_master = None
@@ -69,8 +79,11 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
         self.plot_partial = plot_partial
 
 
+
     def add_plot_sample(self, sample_nr, sample_dict):
+        print(sample_nr)
         adjusted_data = self.adjust_sample_data(sample_dict)
+        print(adjusted_data)
         for node_name, value in adjusted_data.items():
             if node_name in self.curve_dict:
                 # Adds a sample to a existing curve

@@ -76,8 +76,6 @@ class CtrlPanelWidget(object):
         # --- Create all plots ---
         self.plot1 = TimeSyncPlot()
         self.plot1.addLegend()
-        self.plot1.addLine(y=50)
-        self.plot1.addLine(y=-50)
         self.plot2 = TimeSyncPlot(plot_partial=True)
 
         # --- Create all sliders ---

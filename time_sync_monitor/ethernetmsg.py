@@ -14,6 +14,8 @@ OPCODES = {
     'LedMsg': 0x20,
     'DfuMsg': 0x11,
     'TxPowerMsg': 0x55,
+    'SyncLineSampleMsg': 0x54,
+
 }
 
 
@@ -62,6 +64,8 @@ class Message:
             return DfuMsg(raw_data)
         elif msg.opcode == OPCODES['ResetMsg']:
             return ResetMsg(raw_data)
+        elif msg.opcode == OPCODES['SyncLineSampleMsg']:
+            return SyncLineSampleMsg(raw_data)
         else:
             return None
 
@@ -313,5 +317,30 @@ class TxPowerMsg(Message):
             target_addr = reciever_addr
         header = self.pack_header()
         msg = pack(self.MESSAGE_FORMAT, is_broadcast, power_lvl, bytes(target_addr))
+        return header + msg
+
+class SyncLineSampleMsg(Message):
+    MESSAGE_FORMAT = '=II'
+
+    def __init__(self, raw_data=None):
+        super().__init__(raw_data)
+        # Creating a outgoing message
+        if raw_data is None:
+            self.opcode = OPCODES['SyncLineSampleMsg']
+        # Parsing an incoming message
+        else:
+            self.sender_mac_addr = None
+            self.parse_msg(self.payload)
+
+    def parse_msg(self, payload):
+        try:
+            (self.sample_nr, self.sample_val) = unpack_from(self.MESSAGE_FORMAT, payload, 0)
+        except:
+            self.sender_mac_addr = None
+
+    def get_packed_msg(self, sample_nr, sample_val):
+
+        header = self.pack_header()
+        msg = pack(self.MESSAGE_FORMAT, sample_nr, sample_val)
         return header + msg
 
