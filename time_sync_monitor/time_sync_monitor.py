@@ -215,7 +215,7 @@ timer.start(25)
 timer.setInterval(25)
 
 #TODO: remove after testing
-parser = SampleParser(8, 3)
+parser = SampleParser(8, 1)
 parser.plot_signal.connect(print_plot_data)
 win.show()
 

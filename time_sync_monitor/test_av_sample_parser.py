@@ -106,70 +106,70 @@ class SampleParser(QtCore.QTimer):
                 print('Reached timeout for the cluster. Pushed to file (Commented out)')
                 keys_to_remove.append(key)
         for key in keys_to_remove:
-            # self.push_cluster(key)
+            self.push_cluster(key)
             self.remove_cluster(key)
 
 
-def foo(nr, dicti):
-    plotter.add_plot_sample(nr, dicti)
-    printer.add_plot_sample(nr, dicti)
+# def foo(nr, dicti):
+#     plotter.add_plot_sample(nr, dicti)
+#     printer.add_plot_sample(nr, dicti)
+#
+# def fuu():
+#     global teller
+#     parser.add_sample(RawSample(teller, 'gris', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'høne', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'hane', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'trost', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'trane', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'lama', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'kenguru', random.randint(0,40)))
+#     parser.add_sample(RawSample(teller, 'dingo', random.randint(0,40)))
+#     teller +=1
 
-def fuu():
-    global teller
-    parser.add_sample(RawSample(teller, 'gris', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'høne', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'hane', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'trost', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'trane', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'lama', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'kenguru', random.randint(0,40)))
-    parser.add_sample(RawSample(teller, 'dingo', random.randint(0,40)))
-    teller +=1
-
-if __name__ == "__main__":
-    teller = 0
-
-    app = QtWidgets.QApplication(sys.argv)
-
-    parser = SampleParser(8, 3)
-    parser.plot_signal.connect(foo)
-
-    win = QtGui.QWidget()
-    win.setWindowTitle("Time sync plot")
-    win.resize(1000, 600)
-    layout = QtWidgets.QVBoxLayout()
-    win.setLayout(layout)
-    plotter = TimeSyncPlot()
-    printer = TimeSyncPlot(plot_partial=True)
-    printer.change_sync_master('gris')
-    plotter.change_sync_master('gris')
-
-
-    layout.addWidget(plotter)
-    layout.addWidget(printer)
-    win.show()
-
-
-    # parser.add_sample(RawSample(3, 'gris', 20))
-    # parser.add_sample(RawSample(3, 'høne', 30))
-    # parser.add_sample(RawSample(3, 'hane', 40))
-    # parser.add_sample(RawSample(3, 'trost', 10))
-    # parser.add_sample(RawSample(3, 'trane', 70))
-    # parser.add_sample(RawSample(3, 'lama', 55))
-    # parser.add_sample(RawSample(3, 'kenguru', 31))
-    # parser.add_sample(RawSample(3, 'dingo', 79))
-    # parser.add_sample(RawSample(4, 'gris', 20))
-    # parser.add_sample(RawSample(4, 'høne', 30))
-    # parser.add_sample(RawSample(4, 'hane', 40))
-    # parser.add_sample(RawSample(4, 'trost', 10))
-    # parser.add_sample(RawSample(4, 'trane', 70))
-    # parser.add_sample(RawSample(4, 'lama', 55))
-    # parser.add_sample(RawSample(4, 'kenguru', 31))
-    # parser.add_sample(RawSample(4, 'dingo', 79))
-
-    timer = QtCore.QTimer()
-    timer.timeout.connect(fuu)
-    timer.start(500)
-
-    sys.exit(app.exec_())
-
+# if __name__ == "__main__":
+#     teller = 0
+#
+#     app = QtWidgets.QApplication(sys.argv)
+#
+#     parser = SampleParser(8, 3)
+#     parser.plot_signal.connect(foo)
+#
+#     win = QtGui.QWidget()
+#     win.setWindowTitle("Time sync plot")
+#     win.resize(1000, 600)
+#     layout = QtWidgets.QVBoxLayout()
+#     win.setLayout(layout)
+#     plotter = TimeSyncPlot()
+#     printer = TimeSyncPlot(plot_partial=True)
+#     printer.change_sync_master('gris')
+#     plotter.change_sync_master('gris')
+#
+#
+#     layout.addWidget(plotter)
+#     layout.addWidget(printer)
+#     win.show()
+#
+#
+#     # parser.add_sample(RawSample(3, 'gris', 20))
+#     # parser.add_sample(RawSample(3, 'høne', 30))
+#     # parser.add_sample(RawSample(3, 'hane', 40))
+#     # parser.add_sample(RawSample(3, 'trost', 10))
+#     # parser.add_sample(RawSample(3, 'trane', 70))
+#     # parser.add_sample(RawSample(3, 'lama', 55))
+#     # parser.add_sample(RawSample(3, 'kenguru', 31))
+#     # parser.add_sample(RawSample(3, 'dingo', 79))
+#     # parser.add_sample(RawSample(4, 'gris', 20))
+#     # parser.add_sample(RawSample(4, 'høne', 30))
+#     # parser.add_sample(RawSample(4, 'hane', 40))
+#     # parser.add_sample(RawSample(4, 'trost', 10))
+#     # parser.add_sample(RawSample(4, 'trane', 70))
+#     # parser.add_sample(RawSample(4, 'lama', 55))
+#     # parser.add_sample(RawSample(4, 'kenguru', 31))
+#     # parser.add_sample(RawSample(4, 'dingo', 79))
+#
+#     timer = QtCore.QTimer()
+#     timer.timeout.connect(fuu)
+#     timer.start(500)
+#
+#     sys.exit(app.exec_())
+#

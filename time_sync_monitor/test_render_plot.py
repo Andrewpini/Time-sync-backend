@@ -51,6 +51,7 @@ class CurveData(pyqtgraph.PlotCurveItem):
     def clear_curve(self):
         self.x_axis_data.clear()
         self.y_axis_data.clear()
+        self.setData(self.x_axis_data, self.y_axis_data)
         self.clear()
 
     def set_partial_plot_cnt(self, cnt):
@@ -70,6 +71,7 @@ class CurveData(pyqtgraph.PlotCurveItem):
 
 class TimeSyncPlot(pyqtgraph.PlotWidget):
     UINT32T_MAX = 0xFFFFFFFF
+    LATE_SAMPLE_MAX_DIFF = 5
     def __init__(self, plot_partial=False, parent=None):
         super(TimeSyncPlot, self).__init__(parent)
         self.current_sync_master = None
@@ -77,30 +79,38 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
         self.curve_cnt = 0
         self.showGrid(x=True, y=True, alpha=0.8)
         self.plot_partial = plot_partial
+        self.highest_sample_nr = 0
 
-
+    def reset_plotter(self):
+        self.highest_sample_nr = 0
 
     def add_plot_sample(self, sample_nr, sample_dict):
-        print(sample_nr)
-        adjusted_data = self.adjust_sample_data(sample_dict)
-        print(adjusted_data)
-        for node_name, value in adjusted_data.items():
-            if node_name in self.curve_dict:
-                # Adds a sample to a existing curve
-                self.curve_dict[node_name].add_sample(sample_nr, value)
-                #print('Existing curve')
+        if sample_nr > self.highest_sample_nr:
+            self.highest_sample_nr = sample_nr
+        elif (self.highest_sample_nr - sample_nr) > self.LATE_SAMPLE_MAX_DIFF:
+            print('Discarding super old sample')
+            return
+        try:
+            adjusted_data = self.adjust_sample_data(sample_dict)
+            for node_name, value in adjusted_data.items():
+                if node_name in self.curve_dict:
+                    # Adds a sample to a existing curve
+                    self.curve_dict[node_name].add_sample(sample_nr, value)
+                    pass
+                else:
+                    # Appends a new curve to the curve dict
+                    new_curve = CurveData(node_name, COLOR[self.curve_cnt % COLOR_CNT][1])
+                    self.curve_cnt += 1
+                    self.addItem(new_curve)
+                    self.curve_dict[node_name] = new_curve
+                    self.curve_dict[node_name].add_sample(sample_nr, value)
+                    #print('New curve')
+            if self.plot_partial:
+                self.plot_partial_sampleset()
             else:
-                # Appends a new curve to the curve dict
-                new_curve = CurveData(node_name, COLOR[self.curve_cnt % COLOR_CNT][1])
-                self.curve_cnt += 1
-                self.addItem(new_curve)
-                self.curve_dict[node_name] = new_curve
-                self.curve_dict[node_name].add_sample(sample_nr, value)
-                #print('New curve')
-        if self.plot_partial:
-            self.plot_partial_sampleset()
-        else:
-            self.plot_full_sampleset()
+                self.plot_full_sampleset()
+        except:
+            print('Unable to add sample - Discarded')
 
     def remove_sample_cluster(self):
         pass

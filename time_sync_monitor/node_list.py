@@ -33,6 +33,7 @@ class NodeEntry(QtWidgets.QListWidgetItem):
 
 
 class NodeList(QtCore.QTimer):
+    node_list_timeout_sig = QtCore.pyqtSignal()
     def __init__(self, timeout_val, parent=None):
         super(NodeList, self).__init__(parent)
         self.node_dict = {}
@@ -56,21 +57,4 @@ class NodeList(QtCore.QTimer):
         for node_name, node in self.node_dict.items():
             if (timestamp - node.last_active_timestamp) > 5:
                 node.set_active(False)
-
-
-
-# ting = NodeEntry([1,2,3])
-# tang = ting.data(1)
-# print(tang.b)
-#
-# tras = NodeList(1000)
-#
-# if __name__ == "__main__":
-#     teller = 0
-#
-#     app = QtWidgets.QApplication(sys.argv)
-#
-#     tras = NodeList(1000)
-#     tras.add_node(1)
-#     tras.add_node('asd')
-#     sys.exit(app.exec_())
+        self.node_list_timeout_sig.emit()
