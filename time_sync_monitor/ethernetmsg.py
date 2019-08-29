@@ -85,7 +85,7 @@ class Message:
 
 
 class SimpleSignalMsg(Message):
-    MESSAGE_FORMAT = '=6sI'
+    MESSAGE_FORMAT = '=6s'
     def __init__(self, opcode, raw_data=None):
         super().__init__(raw_data)
         #Creating a outgoing message
@@ -98,16 +98,14 @@ class SimpleSignalMsg(Message):
 
     def parse_msg(self, payload):
         try:
-            (self.sender_mac_addr, self.TID) = unpack_from(SimpleSignalMsg.MESSAGE_FORMAT, payload, 0)
+            (self.sender_mac_addr) = unpack_from(SimpleSignalMsg.MESSAGE_FORMAT, payload, 0)
             self.sender_mac_addr = MACAddr(self.sender_mac_addr)
         except:
             self.sender_mac_addr = None
-            self.TID = None
 
-    def get_packed_msg(self, reciever_addr, TID):
-        self.TID = TID
+    def get_packed_msg(self, reciever_addr):
         header = self.pack_header()
-        msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr), TID)
+        msg = pack(self.MESSAGE_FORMAT, bytes(reciever_addr))
         return header + msg
 
 

@@ -20,7 +20,6 @@ class Ui_main_widget(object):
 
     def __init__(self, main_widget):
         self.selected_item = NodeEntry
-        self.current_TID = None
         self.current_time_sync_node = 'None'
         self.current_sync_line_node = 'None'
         self.node_list = NodeList(1000)
@@ -32,8 +31,8 @@ class Ui_main_widget(object):
         # Create ethernet communication instance and connect signals to corresponding handlers
         self.ethernet = ethernetcomm.EthernetCommunicationThread("0.0.0.0", 11001, "255.255.255.255", 10000)
 
-        self.ethernet.sig_i_am_alive.connect(self.add_node)
-        self.ethernet.sig_ack_msg.connect(self.handle_ack_msg)
+        self.ethernet.sig_i_am_alive.connect(self.i_am_alive_msg_handler)
+        self.ethernet.sig_ack_msg.connect(self.ack_msg_handler)
         self.ethernet.sig_sync_line_sample_msg.connect(self.handle_time_sync_sample)
         self.node_list.node_list_timeout_sig.connect(self.node_list_timeout_handler)
 
@@ -58,8 +57,9 @@ class Ui_main_widget(object):
         # self.cpw.tx_pwr_all_btn.clicked.connect(self.cpw.plot1.clear_entire_plot)
         self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot2.set_partial_sampleset_cnt(self.cpw.horizontalSlider.value()))
         self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value()))
+        self.cpw.clear_plot_btn.clicked.connect(self.handle_clear_plot)
 
-    def add_node(self, msg):
+    def i_am_alive_msg_handler(self, msg):
         new = self.node_list.add_node(msg)
         if new is not None:
             self.cpw.list_of_nodes.addItem(new)
@@ -74,33 +74,36 @@ class Ui_main_widget(object):
             self.cpw.set_clickable_widgets(False)
 
     def send_sync_line_start_msg(self):
-        self.current_TID = create_random_TID()
-        ting = StartSyncLineMsg().get_packed_msg(self.selected_item.mac_addr, self.current_TID)
-        self.ethernet.broadcast_data(ting)
+        msg = StartSyncLineMsg().get_packed_msg(self.selected_item.mac_addr)
+        self.ethernet.broadcast_data(msg)
         self.cpw.sync_line_label.setText('Starting - Waiting for response from node %s' % self.selected_item.ip_addr)
         self.current_sync_line_node = self.selected_item.ip_addr
 
-    def send_sync_line_stop_msg(self):
-        self.current_TID = create_random_TID()
-        ting = StopSyncLineMsg().get_packed_msg(self.selected_item.mac_addr, self.current_TID)
-        self.ethernet.broadcast_data(ting)
-        self.cpw.sync_line_label.setText('Stopping - Waiting for response from node %s' % self.current_sync_line_node)
-        self.cpw.plot1.clear_entire_plot()
+        # Set new sync master for the plotter
+        self.cpw.plot1.change_sync_master(str(self.selected_item.mac_addr))
+        self.cpw.plot2.change_sync_master(str(self.selected_item.mac_addr))
+
+        # Reset the plot if a new sync line master msg, I. e. the user starts a new session
         self.cpw.plot1.reset_plotter()
-        self.cpw.plot2.clear_entire_plot()
         self.cpw.plot2.reset_plotter()
+        self.cpw.plot1.clear_entire_plot()
+        self.cpw.plot2.clear_entire_plot()
+
+    def send_sync_line_stop_msg(self):
+        msg = StopSyncLineMsg().get_packed_msg(self.selected_item.mac_addr)
+        self.ethernet.broadcast_data(msg)
+        self.cpw.sync_line_label.setText('Stopping - Waiting for response from node %s' % self.current_sync_line_node)
+
 
     def send_time_sync_start_msg(self):
-        self.current_TID = create_random_TID()
-        ting = StartTimeSyncMsg().get_packed_msg(self.selected_item.mac_addr, self.current_TID)
-        self.ethernet.broadcast_data(ting)
+        msg = StartTimeSyncMsg().get_packed_msg(self.selected_item.mac_addr)
+        self.ethernet.broadcast_data(msg)
         self.cpw.time_sync_label.setText('Starting - Waiting for response from node %s' % self.selected_item.ip_addr)
         self.current_time_sync_node = self.selected_item.ip_addr
 
     def send_time_sync_stop_msg(self):
-        self.current_TID = create_random_TID()
-        ting = StopTimeSyncMsg().get_packed_msg(self.selected_item.mac_addr, self.current_TID)
-        self.ethernet.broadcast_data(ting)
+        msg = StopTimeSyncMsg().get_packed_msg(self.selected_item.mac_addr)
+        self.ethernet.broadcast_data(msg)
         self.cpw.time_sync_label.setText('Stopping - Waiting for response from node %s' % self.current_time_sync_node)
 
     def send_led_msg(self, is_broadcast, on_off, target_addr):
@@ -113,24 +116,24 @@ class Ui_main_widget(object):
 
     def send_reset_msg(self, is_broadcast, target_addr):
         ting = ResetMsg().get_packed_msg(is_broadcast, target_addr)
+        self.cpw.sync_line_label.setText('Reset has been pressed! Behaviour of sync line uncertain...')
+        self.cpw.time_sync_label.setText('Reset has been pressed! Behaviour of time sync uncertain...')
         self.ethernet.broadcast_data(ting)
-        self.cpw.plot1.reset_plotter()
-        self.cpw.plot2.reset_plotter()
+
 
     def send_tx_pwr_msg(self, is_broadcast, target_addr):
         ting = TxPowerMsg().get_packed_msg(is_broadcast, self.cpw.tx_power_cbox.currentIndex(), target_addr)
         self.ethernet.broadcast_data(ting)
 
-    def handle_ack_msg(self, msg):
-        if self.current_TID == msg.TID:
-            if msg.ack_opcode == OPCODES['StartSyncLineMsg']:
-                self.cpw.sync_line_label.setText('Current sync line master is node %s' % msg.sender_mac_addr)
-            if msg.ack_opcode == OPCODES['StopSyncLineMsg']:
-                self.cpw.sync_line_label.setText('Sync line was stopped by user')
-            if msg.ack_opcode == OPCODES['StartTimeSyncMsg']:
-                self.cpw.time_sync_label.setText('Current time sync master is node %s' % msg.sender_mac_addr)
-            if msg.ack_opcode == OPCODES['StopTimeSyncMsg']:
-                self.cpw.time_sync_label.setText('Sync line was stopped by user')
+    def ack_msg_handler(self, msg):
+        if msg.ack_opcode == OPCODES['StartSyncLineMsg']:
+            self.cpw.sync_line_label.setText('Current sync line master is node %s' % msg.sender_mac_addr)
+        if msg.ack_opcode == OPCODES['StopSyncLineMsg']:
+            self.cpw.sync_line_label.setText('Sync line was stopped by user')
+        if msg.ack_opcode == OPCODES['StartTimeSyncMsg']:
+            self.cpw.time_sync_label.setText('Current time sync master is node %s' % msg.sender_mac_addr)
+        if msg.ack_opcode == OPCODES['StopTimeSyncMsg']:
+            self.cpw.time_sync_label.setText('Time sync was stopped by user')
 
     def handle_time_sync_sample(self, msg):
         parser.add_sample(RawSample(msg.sample_nr, str(msg.mac), msg.sample_val))
@@ -150,6 +153,10 @@ class Ui_main_widget(object):
         except:
             pass
 
+    def handle_clear_plot(self):
+        self.cpw.plot1.clear_entire_plot()
+        self.cpw.plot2.clear_entire_plot()
+
 
 def handle_parser_output(nr, dicti):
     ui.cpw.plot1.add_plot_sample(nr, dicti)
@@ -164,8 +171,7 @@ if __name__ == "__main__":
 
     parser = SampleParser(8, 2)
     parser.plot_signal.connect(handle_parser_output)
-    ui.cpw.plot1.change_sync_master('B0-73-4A-9E-AA-57')
-    ui.cpw.plot2.change_sync_master('B0-73-4A-9E-AA-57')
+
 
     main_widget.show()
     sys.exit(app.exec_())

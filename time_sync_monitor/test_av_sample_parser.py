@@ -4,6 +4,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import time
 from test_render_plot import *
 import random
+import pandas as pd
+
 
 
 class RawSample:
@@ -45,6 +47,13 @@ class SampleCluster:
             node_sample_dict[entry.node] = entry.timestamp
         return [self.event_nr, node_sample_dict]
 
+    def create_csv_data(self):
+        csv_dict = {'Sample #': self.event_nr, 'RT Clock': self.local_time, 'Max timestamp delta in microseconds': self.find_max_time_diff()}
+        csv_dict.update({'Knast': 000})
+        for entry in self.cluster_list:
+            csv_dict.update({entry.node: entry.timestamp})
+        return csv_dict
+
     @staticmethod
     def add_timestamp():
         return time.time()
@@ -65,6 +74,7 @@ class SampleParser(QtCore.QTimer):
         self.entry_dict = {}
         self.push_cnt_limit = push_cnt_limit
         self.timeout_in_sec = timeout_in_sec
+        self.df = pd.DataFrame({'Sample #': [], 'RT Clock': [], 'Max timestamp delta in microseconds': []})
 
         self.timeout.connect(self.check_for_timeout)
         self.start(3000)
@@ -90,6 +100,11 @@ class SampleParser(QtCore.QTimer):
         sample_nr, timestamp_dict = self.entry_dict[key].create_plot_data()
         #print(sample_nr)
         #print(timestamp_dict)
+
+        entry = self.entry_dict[key].create_csv_data()
+        self.df = self.df.append(entry, ignore_index=True)
+        self.df.to_csv('pandas_csv.csv')
+
         self.plot_signal.emit(sample_nr, timestamp_dict)
 
 

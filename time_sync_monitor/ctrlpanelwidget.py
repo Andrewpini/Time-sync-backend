@@ -36,6 +36,7 @@ class CtrlPanelWidget(object):
         self.reset_all_btn = PrefBtn("Reset All")
         self.tx_pwr_btn = PrefBtn("Set Selected Node")
         self.tx_pwr_all_btn = PrefBtn("Set All")
+        self.clear_plot_btn = PrefBtn("Clear Plot")
 
 
         # --- Create all lists ---
@@ -163,7 +164,7 @@ class CtrlPanelWidget(object):
 
         # --- Create Control Panel ---
         self.ctrl_widget = QtWidgets.QWidget()
-        self.ctrl_widget.setMaximumSize(QtCore.QSize(308, 16777215))
+        self.ctrl_widget.setMaximumSize(QtCore.QSize(350, 16777215))
         self.ctrl_layout = QtWidgets.QVBoxLayout(self.ctrl_widget)
         self.ctrl_layout.addWidget(self.nodes_gbox)
         self.ctrl_layout.addWidget(self.sync_line_gbox)
@@ -181,7 +182,8 @@ class CtrlPanelWidget(object):
         self.plot_layout.addWidget(self.plot_sample_label)
         self.slider_layout = QtWidgets.QHBoxLayout()
         self.slider_layout.addWidget(self.horizontalSlider)
-        self.slider_layout.addItem(self.spacer)
+        self.slider_layout.addWidget(self.clear_plot_btn)
+        # self.slider_layout.addItem(self.spacer)
         self.plot_layout.addLayout(self.slider_layout)
 
         self.ctrl_dock = QtWidgets.QDockWidget(MainWindow)

@@ -112,9 +112,6 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
         except:
             print('Unable to add sample - Discarded')
 
-    def remove_sample_cluster(self):
-        pass
-
     def plot_full_sampleset(self):
         for node_name in self.curve_dict:
             self.curve_dict[node_name].plot_entire_curve()
