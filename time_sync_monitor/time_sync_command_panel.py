@@ -34,7 +34,7 @@ class Ui_main_widget(object):
 
         self.ethernet.sig_i_am_alive.connect(self.i_am_alive_msg_handler)
         self.ethernet.sig_ack_msg.connect(self.ack_msg_handler)
-        self.ethernet.sig_sync_line_sample_msg.connect(self.handle_time_sync_sample)
+        # self.ethernet.sig_sync_line_sample_msg.connect(self.handle_time_sync_sample)
         self.node_list.node_list_timeout_sig.connect(self.node_list_timeout_handler)
         self.parser.plot_signal.connect(self.handle_parser_output)
 
