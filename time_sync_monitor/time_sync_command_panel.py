@@ -23,7 +23,8 @@ class Ui_main_widget(object):
         self.current_time_sync_node = 'None'
         self.current_sync_line_node = 'None'
         self.node_list = NodeList(1000)
-
+        # TODO: Dynamicaly update node cnt
+        self.parser = SampleParser(8, 2)
         self.cpw = ctrlpanelwidget.CtrlPanelWidget(main_widget)
         self.connect_widgets()
         self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value())
@@ -35,6 +36,7 @@ class Ui_main_widget(object):
         self.ethernet.sig_ack_msg.connect(self.ack_msg_handler)
         self.ethernet.sig_sync_line_sample_msg.connect(self.handle_time_sync_sample)
         self.node_list.node_list_timeout_sig.connect(self.node_list_timeout_handler)
+        self.parser.plot_signal.connect(self.handle_parser_output)
 
 
 
@@ -79,9 +81,8 @@ class Ui_main_widget(object):
         self.cpw.sync_line_label.setText('Starting - Waiting for response from node %s' % self.selected_item.ip_addr)
         self.current_sync_line_node = self.selected_item.ip_addr
 
-        # Set new sync master for the plotter
-        self.cpw.plot1.change_sync_master(str(self.selected_item.mac_addr))
-        self.cpw.plot2.change_sync_master(str(self.selected_item.mac_addr))
+        # Set new sync master for the parser
+        self.parser.change_sync_master(str(self.selected_item.mac_addr))
 
         # Reset the plot if a new sync line master msg, I. e. the user starts a new session
         self.cpw.plot1.reset_plotter()
@@ -136,7 +137,11 @@ class Ui_main_widget(object):
             self.cpw.time_sync_label.setText('Time sync was stopped by user')
 
     def handle_time_sync_sample(self, msg):
-        parser.add_sample(RawSample(msg.sample_nr, str(msg.mac), msg.sample_val))
+        if self.parser.current_sync_master is not None:
+            self.parser.add_sample(RawSample(msg.sample_nr, str(msg.mac), msg.sample_val))
+        else:
+            # print('Debug info: Sync master is not set in the parser. Reset all nodes and choose a sync line master')
+            pass
 
 
     def handle_slider_event(self):
@@ -158,9 +163,9 @@ class Ui_main_widget(object):
         self.cpw.plot2.clear_entire_plot()
 
 
-def handle_parser_output(nr, dicti):
-    ui.cpw.plot1.add_plot_sample(nr, dicti)
-    ui.cpw.plot2.add_plot_sample(nr, dicti)
+    def handle_parser_output(self, nr, dicti):
+        self.cpw.plot1.add_plot_sample(nr, dicti)
+        self.cpw.plot2.add_plot_sample(nr, dicti)
 
 
 
@@ -169,8 +174,7 @@ if __name__ == "__main__":
     main_widget = QtWidgets.QMainWindow()
     ui = Ui_main_widget(main_widget)
 
-    parser = SampleParser(8, 2)
-    parser.plot_signal.connect(handle_parser_output)
+
 
 
     main_widget.show()

@@ -74,7 +74,6 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
     LATE_SAMPLE_MAX_DIFF = 5
     def __init__(self, plot_partial=False, parent=None):
         super(TimeSyncPlot, self).__init__(parent)
-        self.current_sync_master = None
         self.curve_dict = {}
         self.curve_cnt = 0
         self.showGrid(x=True, y=True, alpha=0.8)
@@ -91,8 +90,7 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
             print('Discarding super old sample')
             return
         try:
-            adjusted_data = self.adjust_sample_data(sample_dict)
-            for node_name, value in adjusted_data.items():
+            for node_name, value in sample_dict.items():
                 if node_name in self.curve_dict:
                     # Adds a sample to a existing curve
                     self.curve_dict[node_name].add_sample(sample_nr, value)
@@ -104,7 +102,6 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
                     self.addItem(new_curve)
                     self.curve_dict[node_name] = new_curve
                     self.curve_dict[node_name].add_sample(sample_nr, value)
-                    #print('New curve')
             if self.plot_partial:
                 self.plot_partial_sampleset()
             else:
@@ -128,18 +125,6 @@ class TimeSyncPlot(pyqtgraph.PlotWidget):
         for node_name in self.curve_dict:
             self.curve_dict[node_name].set_partial_plot_cnt(cnt)
 
-    def change_sync_master(self, new_sync_master):
-        self.current_sync_master = new_sync_master
 
-    def adjust_sample_data(self, data):
-        if self.current_sync_master is None:
-            print('Debug info: Sync master has not been set propperly')
-            return None
-        offset = data[self.current_sync_master]
-        for node_name, value in data.items():
-            data[node_name] -= offset
-            if data[node_name] > self.UINT32T_MAX / 2:
-                data[node_name] = -(self.UINT32T_MAX - data[node_name])
-        return data
 
 

@@ -17,7 +17,7 @@ class RawSample:
 
 
 class SampleCluster:
-    UINT32MAX = 4294967295
+    UINT32T_MAX = 0xFFFFFFFF
     def __init__(self, event_nr):
         self.event_nr = event_nr
         self.cluster_list = []
@@ -41,18 +41,30 @@ class SampleCluster:
         return max(timestamp_diff)
 
 
-    def create_plot_data(self):
+    def create_plot_data(self, sync_master):
         node_sample_dict = {}
         for entry in self.cluster_list:
             node_sample_dict[entry.node] = entry.timestamp
-        return [self.event_nr, node_sample_dict]
+        adjusted_dict = self.adjust_sample_data(node_sample_dict, sync_master)
+        return [self.event_nr, adjusted_dict]
 
     def create_csv_data(self):
         csv_dict = {'Sample #': self.event_nr, 'RT Clock': self.local_time, 'Max timestamp delta in microseconds': self.find_max_time_diff()}
-        csv_dict.update({'Knast': 000})
         for entry in self.cluster_list:
             csv_dict.update({entry.node: entry.timestamp})
         return csv_dict
+
+    @staticmethod
+    def adjust_sample_data(data, sync_master):
+        # if sync_master is None:
+        #     print('Debug info: Sync master has not been set properly')
+        #     return None
+        offset = data[sync_master]
+        for node_name, value in data.items():
+            data[node_name] -= offset
+            if data[node_name] > SampleCluster.UINT32T_MAX / 2:
+                data[node_name] = -(SampleCluster.UINT32T_MAX - data[node_name])
+        return data
 
     @staticmethod
     def add_timestamp():
@@ -74,6 +86,9 @@ class SampleParser(QtCore.QTimer):
         self.entry_dict = {}
         self.push_cnt_limit = push_cnt_limit
         self.timeout_in_sec = timeout_in_sec
+        self.current_sync_master = None
+
+
         self.df = pd.DataFrame({'Sample #': [], 'RT Clock': [], 'Max timestamp delta in microseconds': []})
 
         self.timeout.connect(self.check_for_timeout)
@@ -97,16 +112,15 @@ class SampleParser(QtCore.QTimer):
             print('Reached entry limit for the cluster. Pushed to file')
 
     def push_cluster(self, key):
-        sample_nr, timestamp_dict = self.entry_dict[key].create_plot_data()
-        #print(sample_nr)
-        #print(timestamp_dict)
-
-        entry = self.entry_dict[key].create_csv_data()
-        self.df = self.df.append(entry, ignore_index=True)
-        self.df.to_csv('pandas_csv.csv')
-
+        sample_nr, timestamp_dict = self.entry_dict[key].create_plot_data(self.current_sync_master)
+        print(timestamp_dict)
         self.plot_signal.emit(sample_nr, timestamp_dict)
 
+        # TODO: Fix the writing to file
+        # entry = self.entry_dict[key].create_csv_data()
+        # self.df = self.df.append(entry, ignore_index=True)
+        # self.df.to_csv('csvdata.csv')
+        pass
 
 
     def remove_cluster(self, key):
@@ -125,66 +139,6 @@ class SampleParser(QtCore.QTimer):
             self.remove_cluster(key)
 
 
-# def foo(nr, dicti):
-#     plotter.add_plot_sample(nr, dicti)
-#     printer.add_plot_sample(nr, dicti)
-#
-# def fuu():
-#     global teller
-#     parser.add_sample(RawSample(teller, 'gris', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'høne', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'hane', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'trost', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'trane', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'lama', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'kenguru', random.randint(0,40)))
-#     parser.add_sample(RawSample(teller, 'dingo', random.randint(0,40)))
-#     teller +=1
 
-# if __name__ == "__main__":
-#     teller = 0
-#
-#     app = QtWidgets.QApplication(sys.argv)
-#
-#     parser = SampleParser(8, 3)
-#     parser.plot_signal.connect(foo)
-#
-#     win = QtGui.QWidget()
-#     win.setWindowTitle("Time sync plot")
-#     win.resize(1000, 600)
-#     layout = QtWidgets.QVBoxLayout()
-#     win.setLayout(layout)
-#     plotter = TimeSyncPlot()
-#     printer = TimeSyncPlot(plot_partial=True)
-#     printer.change_sync_master('gris')
-#     plotter.change_sync_master('gris')
-#
-#
-#     layout.addWidget(plotter)
-#     layout.addWidget(printer)
-#     win.show()
-#
-#
-#     # parser.add_sample(RawSample(3, 'gris', 20))
-#     # parser.add_sample(RawSample(3, 'høne', 30))
-#     # parser.add_sample(RawSample(3, 'hane', 40))
-#     # parser.add_sample(RawSample(3, 'trost', 10))
-#     # parser.add_sample(RawSample(3, 'trane', 70))
-#     # parser.add_sample(RawSample(3, 'lama', 55))
-#     # parser.add_sample(RawSample(3, 'kenguru', 31))
-#     # parser.add_sample(RawSample(3, 'dingo', 79))
-#     # parser.add_sample(RawSample(4, 'gris', 20))
-#     # parser.add_sample(RawSample(4, 'høne', 30))
-#     # parser.add_sample(RawSample(4, 'hane', 40))
-#     # parser.add_sample(RawSample(4, 'trost', 10))
-#     # parser.add_sample(RawSample(4, 'trane', 70))
-#     # parser.add_sample(RawSample(4, 'lama', 55))
-#     # parser.add_sample(RawSample(4, 'kenguru', 31))
-#     # parser.add_sample(RawSample(4, 'dingo', 79))
-#
-#     timer = QtCore.QTimer()
-#     timer.timeout.connect(fuu)
-#     timer.start(500)
-#
-#     sys.exit(app.exec_())
-#
+    def change_sync_master(self, new_sync_master):
+        self.current_sync_master = new_sync_master
