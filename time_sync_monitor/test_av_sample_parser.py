@@ -45,8 +45,8 @@ class SampleCluster:
         node_sample_dict = {}
         for entry in self.cluster_list:
             node_sample_dict[entry.node] = entry.timestamp
-        adjusted_dict = self.adjust_sample_data(node_sample_dict, sync_master)
-        return [self.event_nr, adjusted_dict]
+        is_status_ok, adjusted_dict = self.adjust_sample_data(node_sample_dict, sync_master)
+        return is_status_ok, self.event_nr, adjusted_dict
 
     def create_csv_data(self):
         csv_dict = {'Sample #': self.event_nr, 'RT Clock': self.local_time, 'Max timestamp delta in microseconds': self.find_max_time_diff()}
@@ -56,15 +56,18 @@ class SampleCluster:
 
     @staticmethod
     def adjust_sample_data(data, sync_master):
-        # if sync_master is None:
-        #     print('Debug info: Sync master has not been set properly')
-        #     return None
-        offset = data[sync_master]
-        for node_name, value in data.items():
-            data[node_name] -= offset
-            if data[node_name] > SampleCluster.UINT32T_MAX / 2:
-                data[node_name] = -(SampleCluster.UINT32T_MAX - data[node_name])
-        return data
+        is_status_ok = True
+        if sync_master in data:
+            offset = data[sync_master]
+            for node_name, value in data.items():
+                data[node_name] -= offset
+                if data[node_name] > SampleCluster.UINT32T_MAX / 2:
+                    data[node_name] = -(SampleCluster.UINT32T_MAX - data[node_name])
+            return is_status_ok, data
+        else:
+            is_status_ok = False
+            return is_status_ok, None
+
 
     @staticmethod
     def add_timestamp():
@@ -112,10 +115,13 @@ class SampleParser(QtCore.QTimer):
             print('Reached entry limit for the cluster. Pushed to file')
 
     def push_cluster(self, key):
-        sample_nr, timestamp_dict = self.entry_dict[key].create_plot_data(self.current_sync_master)
-        print(timestamp_dict)
-        self.plot_signal.emit(sample_nr, timestamp_dict)
-
+        try:
+            is_status_ok, sample_nr, timestamp_dict = self.entry_dict[key].create_plot_data(self.current_sync_master)
+            print(timestamp_dict)
+            if is_status_ok:
+                self.plot_signal.emit(sample_nr, timestamp_dict)
+        except:
+            print('Pushing of sample cluster failed')
         # TODO: Fix the writing to file
         # entry = self.entry_dict[key].create_csv_data()
         # self.df = self.df.append(entry, ignore_index=True)

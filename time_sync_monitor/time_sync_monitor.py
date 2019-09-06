@@ -214,7 +214,7 @@ timer.timeout.connect(sniff_for_packet)
 timer.start(25)
 timer.setInterval(25)
 
-#TODO: remove after testing
+#TODO: Remove after testing
 parser = SampleParser(8, 1)
 parser.plot_signal.connect(print_plot_data)
 win.show()

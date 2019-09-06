@@ -24,7 +24,7 @@ class Ui_main_widget(object):
         self.current_sync_line_node = 'None'
         self.node_list = NodeList(1000)
         # TODO: Dynamicaly update node cnt
-        self.parser = SampleParser(8, 2)
+        self.parser = SampleParser(7, 2)
         self.cpw = ctrlpanelwidget.CtrlPanelWidget(main_widget)
         self.connect_widgets()
         self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value())
@@ -56,7 +56,6 @@ class Ui_main_widget(object):
         self.cpw.reset_all_btn.clicked.connect(lambda: self.send_reset_msg(True, None))
         self.cpw.tx_pwr_btn.clicked.connect(lambda: self.send_tx_pwr_msg(False, self.selected_item.mac_addr))
         self.cpw.tx_pwr_all_btn.clicked.connect(lambda: self.send_tx_pwr_msg(True, None))
-        # self.cpw.tx_pwr_all_btn.clicked.connect(self.cpw.plot1.clear_entire_plot)
         self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot2.set_partial_sampleset_cnt(self.cpw.horizontalSlider.value()))
         self.cpw.horizontalSlider.valueChanged.connect(lambda: self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value()))
         self.cpw.clear_plot_btn.clicked.connect(self.handle_clear_plot)

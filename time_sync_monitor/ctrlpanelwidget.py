@@ -196,6 +196,7 @@ class CtrlPanelWidget(object):
         # Makes sure that the right widgets are not clickable at initialization point
         self.set_clickable_widgets(False)
 
+    # TODO: Improve the enabling/disabling of the buttons
     def set_clickable_widgets(self, on_off):
         self.sync_line_gbox.setEnabled(on_off)
         self.time_sync_gbox.setEnabled(on_off)
