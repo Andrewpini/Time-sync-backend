@@ -1,1 +1,1 @@
-python .\time_sync_monitor.py -broadcast_mode
+python .\time_sync_command_panel.py

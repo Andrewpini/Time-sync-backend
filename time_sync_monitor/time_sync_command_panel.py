@@ -108,8 +108,13 @@ class Ui_main_widget(object):
         self.cpw.time_sync_label.setText('Stopping - Waiting for response from node %s' % self.current_time_sync_node)
 
     def send_led_msg(self, is_broadcast, on_off, target_addr):
-        ting = LedMsg().get_packed_msg(is_broadcast, on_off, target_addr)
-        self.ethernet.broadcast_data(ting)
+        try:
+            ting = LedMsg().get_packed_msg(is_broadcast, on_off, target_addr)
+            self.ethernet.broadcast_data(ting)
+        except Exception as e:
+            print("PENIS 2")
+            print(e)
+
 
     def send_dfu_msg(self, is_broadcast, target_addr):
         ting = DfuMsg().get_packed_msg(is_broadcast, target_addr)
