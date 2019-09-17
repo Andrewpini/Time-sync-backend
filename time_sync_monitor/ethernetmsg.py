@@ -18,15 +18,15 @@ OPCODES = {
 
 }
 
-
 def get_mac_addr():
-    mac = get_mac()
-    mac_list = []
-    for i in range(2, 14, 2):
-        element = str(hex(mac))[i:i + 2]
-        int_element = int(element, 16)
-        mac_list.append(int_element)
-    return mac_list
+    # TODO: Remember to fix this shit
+    # mac = get_mac()
+    # mac_list = []
+    # for i in range(2, 14, 2):
+    #     element = str(hex(mac))[i:i + 2]
+    #     int_element = int(element, 16)
+    #     mac_list.append(int_element)
+    return [0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF]
 
 
 class Message:

@@ -24,7 +24,7 @@ class Ui_main_widget(object):
         self.current_sync_line_node = 'None'
         self.node_list = NodeList(1000)
         # TODO: Dynamicaly update node cnt
-        self.parser = SampleParser(7, 2)
+        self.parser = SampleParser(8, 2)
         self.cpw = ctrlpanelwidget.CtrlPanelWidget(main_widget)
         self.connect_widgets()
         self.cpw.plot_sample_label.setText('Samples shown: %d' % self.cpw.horizontalSlider.value())
